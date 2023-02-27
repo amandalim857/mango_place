@@ -5,8 +5,12 @@
 	"license": "MIT",
 	"private": true,
 	"devDependencies": {
+		"@angular/compiler-cli": "^15.2.0",
+		"@ngtools/webpack": "^15.2.0",
+		"babel-loader": "^9.1.2",
+		"css-loader": "^6.7.3",
 		"sass": "^1.58.3",
-		"ts-loader": "^9.4.2",
+		"sass-loader": "^13.2.0",
 		"typescript": "^4.9.5",
 		"webpack": "^5.75.0",
 		"webpack-cli": "^5.0.1"
@@ -16,5 +20,14 @@
 		"build-production": "./build_production.sh",
 		"run-development": "./run_development.sh",
 		"run-production": "./run_production.sh"
+	},
+	"dependencies": {
+		"@angular/common": "^15.2.0",
+		"@angular/compiler": "^15.2.0",
+		"@angular/core": "^15.2.0",
+		"@angular/platform-browser": "^15.2.0",
+		"@angular/platform-browser-dynamic": "^15.2.0",
+		"rxjs": "^7.8.0",
+		"zone.js": "^0.12.0"
 	}
 }
