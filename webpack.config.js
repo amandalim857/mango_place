@@ -3,6 +3,10 @@ const path = require("path");
 
 module.exports = {
 	entry: "./static/ts/index.ts",
+	externals: {
+		bootstrap: "bootstrap",
+	},
+
 	output: {
 	filename: "index.js",
 		path: path.resolve(__dirname, "static", "js"),
