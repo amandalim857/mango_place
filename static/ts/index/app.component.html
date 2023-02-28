@@ -1,1 +1,76 @@
-<h1 class="heading">Hello, world!</h1>
+<modal
+	[show]="shownModal == AppModal.Landing"
+	[title]="'Log in or sign up to contribute'"
+	(close)="shownModal = AppModal.None">
+	<modal-body>
+		To modify a Mango Place board, please create an account.<br>
+		Without one, you can still spectate.
+	</modal-body>
+
+	<modal-footer class="d-flex justify-content-center">
+        <button type="button"
+			class="btn btn-outline-primary me-3 px-5 py-3"
+			(click)="shownModal = AppModal.LogIn">Log in</button>
+
+        <button type="button"
+			class="btn btn-primary px-5 py-3"
+			(click)="shownModal = AppModal.SignUp">Sign up</button>
+	</modal-footer>
+</modal>
+
+<ng-template
+	*ngFor="let modal of [AppModal.LogIn, AppModal.SignUp]"
+	#template
+	[ngTemplateOutlet]="template"
+	[ngTemplateOutletContext]="{$implicit: modal == AppModal.LogIn ? 'Log in' : 'Sign up'}"
+	let-title>
+	<modal
+		[show]="shownModal == modal"
+		[title]="title"
+		(close)="shownModal = AppModal.None">
+		<form [action]="modal == AppModal.LogIn ? '/log-in' : '/sign-up'" method="post">
+			<modal-body>
+				<div class="form-floating mb-2">
+					<input type="email"
+						id="email-input"
+						class="form-control"
+						placeholder="Email address">
+
+					<label for="email-input" required>Email address</label>
+				</div>
+
+				<div class="form-floating mb-2">
+					<input type="password"
+						id="password-input"
+						class="form-control"
+						placeholder="Password"
+						*ngIf="modal == AppModal.SignUp"
+						#password_input>
+
+					<input type="password"
+						id="password-input"
+						class="form-control"
+						placeholder="Password"
+						*ngIf="modal == AppModal.LogIn">
+
+					<label for="password-input" required>Password</label>
+				</div>
+
+				<div class="form-floating" *ngIf="modal == AppModal.SignUp">
+					<input type="password"
+						id="confirm-password-input"
+						class="form-control"
+						placeholder="Confirm password"
+						(input)="validatePasswordConfirmation()"
+						#password_confirm_input>
+
+					<label for="confirm-password-input" required>Confirm password</label>
+				</div>
+			</modal-body>
+
+			<modal-footer>
+				<button type="submit" class="btn btn-primary">{{ title }}</button>
+			</modal-footer>
+		</form>
+	</modal>
+</ng-template>
