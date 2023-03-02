@@ -1,5 +1,6 @@
 import flask
-from flask import Flask, request, redirect
+from flask import Flask, request, redirect, url_for
+from db import *
 
 app = Flask(__name__)
 
@@ -22,7 +23,7 @@ def login():
 			return login_user(username)
 		else:
 			error = 'Invalid username/password'
-	return redirect('login.html', error=error)
+	return redirect(url_for('login'), error=error)
 
 
 
@@ -32,13 +33,14 @@ def get_canvas():
 	pass
 
 
-@app.route("/canvas/<int:pixel_id>")
+@app.route("/canvas/<int:x>/<int:y>")
 def update_pixel(pixel_id, rgb):
 	# update pixel to new rgb value
     change_pixel(pixel_id, rgb)
     
 
-@app.route("/<int: user_id>/countdown")
+@app.route("/user/<int: user_id>/countdown")
+# prefixed w user to know it is from a user
 def get_countdown(user_id):
 	# get countdown left for user
     retrieve_countdown(user_id)
