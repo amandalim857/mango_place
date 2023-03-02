@@ -14,7 +14,7 @@
 	"scripts": {
 		"build": "./build_development.sh",
 		"build-production": "./build_production.sh",
-		"run": "./run_development.sh",
+		"run-development": "./run_development.sh",
 		"run-production": "./run_production.sh"
 	}
 }

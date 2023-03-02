@@ -4,7 +4,6 @@ version = "0.1.0"
 description = "Inspired by Reddit's r/place, MangoPlace is a fun space for friends to share a canvas!"
 authors = []
 license = "MIT"
-packages = [{include = "mango_place"}]
 
 [tool.poetry.dependencies]
 flask = "^2.2.3"
