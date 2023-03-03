@@ -43,16 +43,8 @@ def valid_username(username):
 def valid_login(username, password):
     conn = create_connection()
     cur = conn.cursor()
-    userbytes = password.encode("utf        -8")
+    userbytes = password.encode("utf-8")
     info = cur.execute("SELECT password FROM users WHERE username == ?)",(username))
     conn.commit()
     result = bcrypt.checkpw(userbytes, info[0])
     return result
-
-def login_user(username):
-    # create jwt token thing
-    pass
-
-def logout_user():
-    pass
-    
