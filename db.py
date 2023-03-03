@@ -1,4 +1,5 @@
 import sqlite3
+import bcrypt
 
 def create_connection():
     conn = sqlite3.connect("schema.db")
@@ -19,8 +20,10 @@ def create_users_table(conn):
 
 def add_user(conn, username, password):
     cur = conn.cursor()
-    # TODO: Hash password
-    cur.execute("INSERT INTO users(username, password) values (?, ?)", (username, password))
+    userbytes = password.encode("utf-8")
+    salt = bcrypt.gensalt()
+    hash = bcrypt.hashpw(userbytes, salt)
+    cur.execute("INSERT INTO users(username, password) values (?, ?)", (username, hash))
     conn.commit()
 
 
@@ -40,15 +43,14 @@ def valid_username(username):
 def valid_login(username, password):
     conn = create_connection()
     cur = conn.cursor()
-    # hash the password then compare
+    userbytes = password.encode("utf        -8")
     info = cur.execute("SELECT password FROM users WHERE username == ?)",(username))
     conn.commit()
-    if info[0] == password:
-        return True
-    return False
+    result = bcrypt.checkpw(userbytes, info[0])
+    return result
 
 def login_user(username):
-    # create a cookie that persists i think
+    # create jwt token thing
     pass
 
 def logout_user():
