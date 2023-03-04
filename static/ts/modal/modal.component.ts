@@ -8,16 +8,16 @@ import * as bootstrap from "bootstrap";
 export class ModalComponent implements AfterViewInit {
 	private _show?: boolean;
 
-	@Input() public readonly title: string;
+	@Input() public readonly title!: string;
 	@Output() public readonly close = new EventEmitter<void>();
 
-	@ViewChild("modal_div") private readonly modalElement: ElementRef<HTMLDivElement>;
+	@ViewChild("modal_div") private readonly modalElement!: ElementRef<HTMLDivElement>;
 
 	private modal?: bootstrap.Modal;
 
 	@Input()
 	public get show() {
-		return this._show;
+		return this._show ?? false;
 	}
 
 	public set show(show: boolean) {
@@ -34,13 +34,13 @@ export class ModalComponent implements AfterViewInit {
 		this.modal = new bootstrap.Modal(this.modalElement.nativeElement);
 
 		this.modalElement.nativeElement.addEventListener("hide.bs.modal",
-			(event: bootstrap.Modal.Event) => {
+			((event: bootstrap.Modal.Event) => {
 				if (this.show) {
 					this.close.emit();
 
 					event.preventDefault();
 				}
-			}
+			}) as EventListener
 		);
 
 		if (this.show) {
