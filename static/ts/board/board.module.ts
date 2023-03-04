@@ -1,8 +1,13 @@
+import { CommonModule } from "@angular/common";
 import { NgModule } from "@angular/core";
+import { BoardControlsComponent } from "@mangoplace/board/controls/boardcontrols.component";
+import { BoardControlButtonComponent } from "@mangoplace/board/controls/button/boardcontrolbutton.component";
+import { BootstrapModule } from "@mangoplace/bootstrap/bootstrap.module";
 import { BoardComponent } from "./board.component";
 
 @NgModule({
-	declarations: [BoardComponent],
-	exports: [BoardComponent]
+	declarations: [BoardComponent, BoardControlButtonComponent, BoardControlsComponent],
+	exports: [BoardComponent],
+	imports: [CommonModule, BootstrapModule],
 })
 export class BoardModule {}

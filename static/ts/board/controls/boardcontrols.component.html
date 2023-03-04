@@ -1,0 +1,41 @@
+<form>
+	<board-control-button
+		class="board-control-button mb-1"
+		category="mode"
+		[checked]="defaultMode == BoardMode.PAN"
+		icon="open_with"
+		inputId="board-mode-input-1"
+		title="Pan"
+		(action)="changeMode.emit(BoardMode.PAN)"></board-control-button>
+
+	<board-control-button
+		class="board-control-button mb-1"
+		category="mode"
+		[checked]="defaultMode == BoardMode.PLACE"
+		icon="edit"
+		inputId="board-mode-input-2"
+		title="Place a pixel"
+		(action)="changeMode.emit(BoardMode.PLACE)"></board-control-button>
+
+	<board-control-button
+		class="board-control-button mb-1"
+		category="color"
+		[checked]="defaultColor.toLowerCase() == preset.color.toLowerCase()"
+		[color]="preset.color"
+		[inputId]="'board-color-preset-input-' + i"
+		[title]="'Use ' + preset.name"
+		*ngFor="let preset of colorPresets; index as i"></board-control-button>
+
+	<div
+		class="board-control-button d-flex align-items-center justify-content-center rounded-3 shadow"
+		[style]="'background-color: ' + colorPickerColor + ';'">
+		<board-control-button
+			class="board-control-button-inner"
+			category="color"
+			[checked]="defaultColor.toLowerCase() == colorPickerColor.toLowerCase()"
+			inputId="board-color-picker-radio"
+			title="Pick a color">
+			<input type="color" class="opacity-0 w-100 h-100" (input)="handleColorPickerInput($event)">
+		</board-control-button>
+	</div>
+</form>

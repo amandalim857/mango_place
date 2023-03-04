@@ -1,5 +1,6 @@
 import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild } from "@angular/core";
 import { Animator } from "@mangoplace/board/animator/animator";
+import { BoardMode } from "@mangoplace/board/board";
 
 enum AnimationType {
 	FORCEFUL_RERENDER,
@@ -32,6 +33,8 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	private isMouseDown: boolean = false;
 	private mouseOffsetX?: number;
 	private mouseOffsetY?: number;
+	public selectedColor = "#a9a9a9";
+	public selectedMode = BoardMode.PAN;
 
 	private animator!: Animator<AnimationType, Transformation>;
 
