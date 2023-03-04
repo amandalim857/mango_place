@@ -6,3 +6,10 @@
 	(mouseup)="handleMouseUpOrOut()"
 	(wheel)="handleWheel($event)"
 	#canvas></canvas>
+
+<board-controls
+	class="position-absolute"
+	[defaultColor]="selectedColor"
+	[defaultMode]="selectedMode"
+	(changeColor)="selectedColor = $event"
+	(changeMode)="selectedMode = $event"></board-controls>

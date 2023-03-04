@@ -1,0 +1,21 @@
+<input type="radio"
+	[id]="inputId"
+	class="btn-check"
+	autocomplete="off"
+	[name]="category"
+	[checked]="checked"
+	*ngIf="category">
+
+<label
+	[class]="'board-control-label btn btn-light d-flex align-items-center justify-content-center shadow w-100 h-100' + (color ? ' board-control-button-colored border-0' : ' border')"
+	[for]="category ? inputId : undefined"
+	[style]="color ? 'background-color: ' + color + ';' : undefined"
+	[title]="title"
+	data-bs-placement="right"
+	data-bs-toggle="tooltip"
+	tooltip
+	(click)="click.emit()">
+	<span class="material-symbols-outlined" *ngIf="icon">{{ icon }}</span>
+
+	<ng-content></ng-content>
+</label>
