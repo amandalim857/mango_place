@@ -20,12 +20,15 @@ interface Transformation {
 	templateUrl: "./board.component.html"
 })
 export class BoardComponent implements AfterViewInit, OnDestroy {
+	public readonly BoardMode = BoardMode;
+
 	@Input() private readonly cellBorderColor!: string;
 	@Input() private readonly boardSize!: number;
 	@Input() private readonly framerateCap!: number;
 	@Input() private readonly hoveredCellColor!: string;
 	@Input() private readonly minimumZoom!: number;
 	@Input() private readonly zoomAnimationDuration!: number
+
 	@ViewChild("canvas") private readonly canvas!: ElementRef<HTMLCanvasElement>;
 
 	private canvasSize!: number;
@@ -34,7 +37,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	private mouseOffsetX?: number;
 	private mouseOffsetY?: number;
 	public selectedColor = "#a9a9a9";
-	public selectedMode = BoardMode.PAN;
+	private _selectedMode = BoardMode.PAN;
 
 	private animator!: Animator<AnimationType, Transformation>;
 
@@ -58,7 +61,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	});
 
 	private drawHoveredCell = this.withContext((context, transformation) => {
-		if (this.mouseOffsetX && this.mouseOffsetY) {
+		if (this.selectedMode == BoardMode.PLACE && this.mouseOffsetX && this.mouseOffsetY) {
 			const [inverseX, inverseY] =
 				this.inverselyTransformed(transformation, this.mouseOffsetX, this.mouseOffsetY);
 
@@ -102,7 +105,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		this.mouseOffsetX = event.offsetX;
 		this.mouseOffsetY = event.offsetY;
 
-		if (this.isMouseDown) {
+		if (this.selectedMode == BoardMode.PAN && this.isMouseDown) {
 			await this.animator.queueAnimation(
 				() => ({
 					type: AnimationType.PAN,
@@ -116,7 +119,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 					)
 				})
 			);
-		} else {
+		} else if (this.selectedMode == BoardMode.PLACE) {
 			await this.forceRerender();
 		}
 	}
@@ -159,14 +162,9 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		];
 	}
 
-	private resizeCanvas(): void {
-		this.canvasSize = Math.min(window.innerWidth, window.innerHeight);
-
-		this.canvas.nativeElement.width = window.innerWidth;
-		this.canvas.nativeElement.height = window.innerHeight;
-	}
-
 	public async ngAfterViewInit(): Promise<void> {
+		this.setCursor();
+
 		this.context = this.canvas.nativeElement.getContext("2d")!;
 
 		this.resizeCanvas();
@@ -194,6 +192,27 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 
 	public ngOnDestroy(): void {
 		window.removeEventListener("resize", this.handleWindowResize);
+	}
+
+	private resizeCanvas(): void {
+		this.canvasSize = Math.min(window.innerWidth, window.innerHeight);
+
+		this.canvas.nativeElement.width = window.innerWidth;
+		this.canvas.nativeElement.height = window.innerHeight;
+	}
+
+	public get selectedMode(): BoardMode {
+		return this._selectedMode;
+	}
+
+	public set selectedMode(mode: BoardMode) {
+		this._selectedMode = mode;
+
+		this.setCursor();
+	}
+
+	private setCursor(): void {
+		this.canvas.nativeElement.style.cursor = this.selectedMode == BoardMode.PAN ? "move" : "";
 	}
 
 	private translated(
