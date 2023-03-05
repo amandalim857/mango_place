@@ -29,8 +29,7 @@ def login():
 			if valid_login(username, password):
 				session['username'] = username
 				return render_template('canvas.html')
-			else:
-				error = 'Incorrect password'	
+			error = 'Incorrect password'	
 		else:
 			error = 'Username does not exist'
 		return render_template('login.html', error=error)
@@ -49,7 +48,7 @@ def update_pixel(pixel_id, rgb):
     change_pixel(pixel_id, rgb)
     
 
-@app.route("/user/<int: user_id>/countdown")
+@app.route("/user/<int:user_id>/countdown")
 # prefixed w user to know it is from a user
 def get_countdown(user_id):
 	# get countdown left for user
