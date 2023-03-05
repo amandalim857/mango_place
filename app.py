@@ -1,4 +1,3 @@
-import flask
 from flask import Flask, request, redirect, url_for, render_template, session
 from config import SECRET_KEY
 from db import *
