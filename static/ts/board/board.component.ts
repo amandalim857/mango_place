@@ -104,31 +104,11 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		return this.canvasSize / this.boardSize;
 	}
 
-	private async forceRerender(): Promise<void> {
-		await this.animator.queueAnimation(
-			() => ({
-				type: AnimationType.FORCEFUL_RERENDER,
-				left: 0,
-				right: 0,
-				duration: 0,
-				executor: () => {}
-			})
-		);
-	}
-
 	public async handleMouseDown(): Promise<void> {
 		this.isMouseDown = true;
 
 		if (this.selectedMode == BoardMode.PLACE) {
-			await this.animator.queueAnimation(
-				() => ({
-					type: AnimationType.PLACE,
-					left: 0,
-					right: 0,
-					duration: 0,
-					executor: state => this.placePixel(state)
-				})
-			);
+			await this.queuePixelPlacement();
 		}
 	}
 
@@ -151,7 +131,11 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 				})
 			);
 		} else if (this.selectedMode == BoardMode.PLACE) {
-			await this.forceRerender();
+			if (this.isMouseDown) {
+				await this.queuePixelPlacement();
+			} else {
+				await this.queueForcefulRerender();
+			}
 		}
 	}
 
@@ -179,7 +163,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	public handleWindowResize = async () => {
 		this.resizeCanvas();
 
-		await this.forceRerender();
+		await this.queueForcefulRerender();
 	};
 
 	private inverselyTransformed(
@@ -224,7 +208,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 
 		window.addEventListener("resize", this.handleWindowResize);
 
-		this.forceRerender();
+		await this.queueForcefulRerender();
 
 		await this.animator.render();
 
@@ -235,14 +219,36 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		window.removeEventListener("resize", this.handleWindowResize);
 	}
 
-	private placePixel(state: BoardState): void {
-		this.withCoordinates((_, row, column) => {
-			state.image.setPixel({
-				row,
-				column,
-				color: this.selectedColor
-			});
-		})(state.transformation);
+	private async queueForcefulRerender(): Promise<void> {
+		await this.animator.queueAnimation(
+			() => ({
+				type: AnimationType.FORCEFUL_RERENDER,
+				left: 0,
+				right: 0,
+				duration: 0,
+				executor: () => {}
+			})
+		);
+	}
+
+	private async queuePixelPlacement(): Promise<void> {
+		await this.animator.queueAnimation(
+			() => ({
+				type: AnimationType.PLACE,
+				left: 0,
+				right: 0,
+				duration: 0,
+				executor: state => {
+					this.withCoordinates((_, row, column) => {
+						state.image.setPixel({
+							row,
+							column,
+							color: this.selectedColor
+						});
+					})(state.transformation);
+				}
+			})
+		);
 	}
 
 	private resizeCanvas(): void {
