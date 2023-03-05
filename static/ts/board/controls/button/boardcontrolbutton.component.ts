@@ -13,5 +13,5 @@ export class BoardControlButtonComponent {
 	@Input() public readonly inputId?: string
 	@Input() public readonly title!: string
 
-	@Output() public readonly click = new EventEmitter<void>();
+	@Output() public readonly action = new EventEmitter<void>();
 }

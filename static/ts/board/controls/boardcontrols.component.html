@@ -24,6 +24,7 @@
 		[color]="preset.color"
 		[inputId]="'board-color-preset-input-' + i"
 		[title]="'Use ' + preset.name"
+		(action)="changeColor.emit(preset.color)"
 		*ngFor="let preset of colorPresets; index as i"></board-control-button>
 
 	<div
