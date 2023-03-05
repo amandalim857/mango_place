@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation } from "@angular/core";
-import { BoardMode } from "@mangoplace/board/board";
+import { BoardMode } from "@mangoplace/board/boardmode";
 
 @Component({
 	encapsulation: ViewEncapsulation.None,
