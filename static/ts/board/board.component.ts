@@ -36,10 +36,13 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	@Input() private readonly minimumZoom!: number;
 	@Input() private readonly zoomAnimationDuration!: number
 
-	@ViewChild("canvas") private readonly canvas!: ElementRef<HTMLCanvasElement>;
+	@ViewChild("backCanvas") private readonly backCanvas!: ElementRef<HTMLCanvasElement>;
+	@ViewChild("frontCanvas") private readonly frontCanvas!: ElementRef<HTMLCanvasElement>;
 
+	private backContext!: CanvasRenderingContext2D;
+	private frontContext!: CanvasRenderingContext2D;
 	private canvasSize!: number;
-	private context!: CanvasRenderingContext2D;
+
 	private isMouseDown: boolean = false;
 	private mouseOffsetX?: number;
 	private mouseOffsetY?: number;
@@ -48,7 +51,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 
 	private animator!: Animator<AnimationType, BoardState>;
 
-	private drawGrid = this.withContext(async context => {
+	private drawGrid = this.withBackContext(async context => {
 		context.lineCap = "square";
 		context.strokeStyle = this.cellBorderColor;
 
@@ -67,17 +70,17 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		}
 	});
 
-	private drawHoveredCell = this.withContext(async (context, state) => {
+	private drawHoveredCell = this.withBackContext(async (context, state) => {
 		if (this.selectedMode == BoardMode.PLACE) {
 			this.withCoordinates((_, row, column) => {
 				context.fillStyle = this.hoveredCellColor;
 
 				context.beginPath();
 				context.rect(
-					column * this.cellSize + 0.5,
-					row * this.cellSize + 0.5,
-					this.cellSize - 1,
-					this.cellSize - 1
+					column * this.cellSize,
+					row * this.cellSize,
+					this.cellSize,
+					this.cellSize
 				);
 
 				context.fill();
@@ -85,7 +88,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		}
 	});
 
-	private drawImage = this.withContext(async (context, state) => {
+	private drawImage = this.withBackContext(async (context, state) => {
 		context.imageSmoothingEnabled = false;
 
 		context.drawImage(
@@ -193,7 +196,8 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	public async ngAfterViewInit(): Promise<void> {
 		this.setCursor();
 
-		this.context = this.canvas.nativeElement.getContext("2d")!;
+		this.backContext = this.backCanvas.nativeElement.getContext("2d")!;
+		this.frontContext = this.frontCanvas.nativeElement.getContext("2d")!;
 
 		this.resizeCanvas();
 
@@ -204,14 +208,19 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 				y: (window.innerHeight - this.canvasSize) / 2,
 				scale: 1
 			}
-		}, this.withContext(async (context, state) => {
-			context.resetTransform();
-			context.clearRect(0, 0, window.innerWidth, window.innerHeight);
+		}, async state => {
+			await this.withBackContext(async (context, state) => {
+				context.resetTransform();
+				context.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-			await this.drawImage(state);
-			await this.drawGrid(state);
-			await this.drawHoveredCell(state);
-		}), this.framerateCap);
+				await this.drawImage(state);
+				await this.drawHoveredCell(state);
+				await this.drawGrid(state);
+			})(state);
+
+			this.frontContext.clearRect(0, 0, window.innerWidth, window.innerHeight);
+			this.frontContext.drawImage(this.backCanvas.nativeElement, 0, 0);
+		}, this.framerateCap);
 
 		window.addEventListener("resize", this.handleWindowResize);
 
@@ -239,8 +248,11 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	private resizeCanvas(): void {
 		this.canvasSize = Math.min(window.innerWidth, window.innerHeight);
 
-		this.canvas.nativeElement.width = window.innerWidth;
-		this.canvas.nativeElement.height = window.innerHeight;
+		this.backCanvas.nativeElement.width = window.innerWidth;
+		this.backCanvas.nativeElement.height = window.innerHeight;
+
+		this.frontCanvas.nativeElement.width = window.innerWidth;
+		this.frontCanvas.nativeElement.height = window.innerHeight;
 	}
 
 	public get selectedMode(): BoardMode {
@@ -254,7 +266,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	}
 
 	private setCursor(): void {
-		this.canvas.nativeElement.style.cursor = this.selectedMode == BoardMode.PAN ? "move" : "";
+		this.frontCanvas.nativeElement.style.cursor = this.selectedMode == BoardMode.PAN ? "move" : "";
 	}
 
 	private translate(
@@ -281,12 +293,12 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		transformation.scale = zoom;
 	}
 
-	private withContext<A>(
+	private withBackContext<A>(
 		fn: (context: CanvasRenderingContext2D, state: BoardState) => Promise<A>
 	): (state: BoardState) => Promise<A> {
 		return async state => {
-			this.context.save();
-			this.context.setTransform(
+			this.backContext.save();
+			this.backContext.setTransform(
 				state.transformation.scale,
 				0,
 				0,
@@ -295,11 +307,11 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 				state.transformation.y
 			);
 
-			this.context.imageSmoothingEnabled = false;
+			this.backContext.imageSmoothingEnabled = false;
 
-			const result = await fn(this.context, state);
+			const result = await fn(this.backContext, state);
 
-			this.context.restore();
+			this.backContext.restore();
 
 			return result;
 		};
