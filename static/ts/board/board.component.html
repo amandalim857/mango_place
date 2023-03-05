@@ -1,3 +1,4 @@
+<canvas class="d-none" #backCanvas></canvas>
 <canvas
 	class="w-100 h-100"
 	(mousedown)="handleMouseDown()"
@@ -5,7 +6,7 @@
 	(mouseout)="handleMouseUpOrOut()"
 	(mouseup)="handleMouseUpOrOut()"
 	(wheel)="handleWheel($event)"
-	#canvas></canvas>
+	#frontCanvas></canvas>
 
 <board-controls
 	class="position-absolute"
