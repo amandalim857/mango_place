@@ -10,7 +10,7 @@ interface Animation<State> {
 	executor: Executor<State>
 }
 
-export type Executor<State> = (state: State, currentValue: number) => State;
+export type Executor<State> = (state: State, currentValue: number) => void;
 
 class LatencyTracker {
 	private frameCount = 0;
@@ -18,7 +18,7 @@ class LatencyTracker {
 	private latencyAverage?: number;
 	private latencyTarget: number;
 
-	constructor(private readonly renderer: () => void, targetFramerate: number) {
+	constructor(private readonly renderer: () => Promise<void>, targetFramerate: number) {
 		this.latencyTarget = 1000 / targetFramerate;
 	}
 
@@ -44,7 +44,7 @@ class LatencyTracker {
 		this.frameCount++;
 		this.lastRenderTime = now;
 
-		this.renderer();
+		await this.renderer();
 	}
 
 	public reset(): void {
@@ -63,7 +63,7 @@ export class Animator<AnimationType, State> {
 
 	constructor(
 		initialState: State,
-		private readonly renderer: (state: State) => void,
+		private readonly renderer: (state: State) => Promise<void>,
 		framerateCap: number,
 	) {
 		this.minimumLatency = 1000 / framerateCap;
@@ -167,7 +167,7 @@ export class Animator<AnimationType, State> {
 			this.renderAbortController!.signal.addEventListener("abort", () => resolve())
 		});
 
-		const latencyTracker = new LatencyTracker(() => this.renderer(this.state), 60);
+		const latencyTracker = new LatencyTracker(async () => await this.renderer(this.state), 60);
 		let lastRender = Promise.resolve();
 		let lastRenderDuration: number | undefined;
 
@@ -226,7 +226,7 @@ export class Animator<AnimationType, State> {
 						await this.ongoingCount.set(count => count - 1);
 					}
 
-					this.state = animation.executor(this.state, nextValue ?? animation.right);
+					animation.executor(this.state, nextValue ?? animation.right);
 				}
 			});
 		}

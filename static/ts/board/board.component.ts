@@ -1,11 +1,18 @@
 import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild } from "@angular/core";
 import { Animator } from "@mangoplace/board/animator/animator";
-import { BoardMode } from "@mangoplace/board/board";
+import { BoardImage } from "@mangoplace/board/boardimage";
+import { BoardMode } from "@mangoplace/board/boardmode";
 
 enum AnimationType {
 	FORCEFUL_RERENDER,
 	PAN,
+	PLACE,
 	ZOOM
+}
+
+interface BoardState {
+	image: BoardImage
+	transformation: Transformation
 }
 
 interface Transformation {
@@ -36,12 +43,12 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	private isMouseDown: boolean = false;
 	private mouseOffsetX?: number;
 	private mouseOffsetY?: number;
-	public selectedColor = "#a9a9a9";
+	public selectedColor = "#f94144";
 	private _selectedMode = BoardMode.PAN;
 
-	private animator!: Animator<AnimationType, Transformation>;
+	private animator!: Animator<AnimationType, BoardState>;
 
-	private drawGrid = this.withContext(context => {
+	private drawGrid = this.withContext(async context => {
 		context.lineCap = "square";
 		context.strokeStyle = this.cellBorderColor;
 
@@ -60,25 +67,34 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		}
 	});
 
-	private drawHoveredCell = this.withContext((context, transformation) => {
-		if (this.selectedMode == BoardMode.PLACE && this.mouseOffsetX && this.mouseOffsetY) {
-			const [inverseX, inverseY] =
-				this.inverselyTransformed(transformation, this.mouseOffsetX, this.mouseOffsetY);
-
-			if (
-				inverseX >= 0 && inverseX < this.canvasSize &&
-				inverseY >= 0 && inverseY < this.canvasSize
-			) {
+	private drawHoveredCell = this.withContext(async (context, state) => {
+		if (this.selectedMode == BoardMode.PLACE) {
+			this.withCoordinates((_, row, column) => {
 				context.fillStyle = this.hoveredCellColor;
 
-				const cellX = inverseX - inverseX % this.cellSize;
-				const cellY = inverseY - inverseY % this.cellSize;
-
 				context.beginPath();
-				context.rect(cellX + 0.5, cellY + 0.5, this.cellSize - 1, this.cellSize - 1);
+				context.rect(
+					column * this.cellSize + 0.5,
+					row * this.cellSize + 0.5,
+					this.cellSize - 1,
+					this.cellSize - 1
+				);
+
 				context.fill();
-			}
+			})(state.transformation);
 		}
+	});
+
+	private drawImage = this.withContext(async (context, state) => {
+		context.imageSmoothingEnabled = false;
+
+		context.drawImage(
+			await state.image.getImageBitmap(),
+			0,
+			0,
+			this.canvasSize,
+			this.canvasSize
+		);
 	});
 
 	public get cellSize(): number {
@@ -92,13 +108,25 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 				left: 0,
 				right: 0,
 				duration: 0,
-				executor: state => state
+				executor: () => {}
 			})
 		);
 	}
 
-	public handleMouseDown(): void {
+	public async handleMouseDown(): Promise<void> {
 		this.isMouseDown = true;
+
+		if (this.selectedMode == BoardMode.PLACE) {
+			await this.animator.queueAnimation(
+				() => ({
+					type: AnimationType.PLACE,
+					left: 0,
+					right: 0,
+					duration: 0,
+					executor: state => this.placePixel(state)
+				})
+			);
+		}
 	}
 
 	public async handleMouseMove(event: MouseEvent): Promise<void> {
@@ -112,8 +140,8 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 					left: 0,
 					right: 0,
 					duration: 0,
-					executor: transformation => this.translated(
-						transformation,
+					executor: state => this.translate(
+						state.transformation,
 						event.movementX,
 						event.movementY
 					)
@@ -130,13 +158,13 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 
 	public async handleWheel(event: WheelEvent): Promise<void> {
 		await this.animator.queueAnimation(
-			initialTransformation => ({
+			state => ({
 				type: AnimationType.ZOOM,
-				left: initialTransformation.scale,
-				right: initialTransformation.scale - event.deltaY / this.canvasSize,
+				left: state.transformation.scale,
+				right: state.transformation.scale - event.deltaY / this.canvasSize,
 				duration: this.zoomAnimationDuration,
-				executor: (currentTransformation, zoom) => this.zoomedAbsolutely(
-					currentTransformation,
+				executor: (state, zoom) => this.zoomAbsolutely(
+					state.transformation,
 					this.mouseOffsetX ?? this.canvasSize / 2,
 					this.mouseOffsetY ?? this.canvasSize / 2,
 					zoom
@@ -170,15 +198,19 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		this.resizeCanvas();
 
 		this.animator = new Animator({
-			x: (window.innerWidth - this.canvasSize) / 2,
-			y: (window.innerHeight - this.canvasSize) / 2,
-			scale: 1
-		}, this.withContext((context, transformation) => {
+			image: new BoardImage(this.boardSize),
+			transformation: {
+				x: (window.innerWidth - this.canvasSize) / 2,
+				y: (window.innerHeight - this.canvasSize) / 2,
+				scale: 1
+			}
+		}, this.withContext(async (context, state) => {
 			context.resetTransform();
 			context.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-			this.drawGrid(transformation);
-			this.drawHoveredCell(transformation);
+			await this.drawImage(state);
+			await this.drawGrid(state);
+			await this.drawHoveredCell(state);
 		}), this.framerateCap);
 
 		window.addEventListener("resize", this.handleWindowResize);
@@ -192,6 +224,16 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 
 	public ngOnDestroy(): void {
 		window.removeEventListener("resize", this.handleWindowResize);
+	}
+
+	private placePixel(state: BoardState): void {
+		this.withCoordinates((_, row, column) => {
+			state.image.setPixel({
+				row,
+				column,
+				color: this.selectedColor
+			});
+		})(state.transformation);
 	}
 
 	private resizeCanvas(): void {
@@ -215,55 +257,75 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		this.canvas.nativeElement.style.cursor = this.selectedMode == BoardMode.PAN ? "move" : "";
 	}
 
-	private translated(
+	private translate(
 		transformation: Transformation,
 		deltaX: number,
 		deltaY: number
-	): Transformation {
-		return {
-			...transformation,
-
-			x: transformation.x + deltaX,
-			y: transformation.y + deltaY
-		};
+	): void {
+		transformation.x += deltaX;
+		transformation.y += deltaY;
 	}
 
-	private zoomedAbsolutely(
+	private zoomAbsolutely(
 		transformation: Transformation,
 		x: number,
 		y: number,
 		zoom: number
-	): Transformation {
+	): void {
 		zoom = Math.max(zoom, this.minimumZoom);
 
 		const [inverseX, inverseY] = this.inverselyTransformed(transformation, x, y);
 
-		return {
-			x: transformation.x + inverseX * (transformation.scale - zoom),
-			y: transformation.y + inverseY * (transformation.scale - zoom),
-			scale: zoom
-		};
+		transformation.x += inverseX * (transformation.scale - zoom);
+		transformation.y += inverseY * (transformation.scale - zoom);
+		transformation.scale = zoom;
 	}
 
 	private withContext<A>(
-		fn: (context: CanvasRenderingContext2D, transformation: Transformation) => A
-	): (transformation: Transformation) => A {
-		return transformation => {
+		fn: (context: CanvasRenderingContext2D, state: BoardState) => Promise<A>
+	): (state: BoardState) => Promise<A> {
+		return async state => {
 			this.context.save();
 			this.context.setTransform(
-				transformation.scale,
+				state.transformation.scale,
 				0,
 				0,
-				transformation.scale,
-				transformation.x,
-				transformation.y
+				state.transformation.scale,
+				state.transformation.x,
+				state.transformation.y
 			);
 
-			const result = fn(this.context, transformation);
+			this.context.imageSmoothingEnabled = false;
+
+			const result = await fn(this.context, state);
 
 			this.context.restore();
 
 			return result;
-		}
+		};
+	}
+
+	private withCoordinates<A>(
+		fn: (transformation: Transformation, row: number, column: number) => A
+	): (transformation: Transformation) => A | undefined {
+		return transformation => {
+			if (this.mouseOffsetX && this.mouseOffsetY) {
+				const [inverseX, inverseY] = this.inverselyTransformed(
+					transformation,
+					this.mouseOffsetX,
+					this.mouseOffsetY
+				);
+
+				if (
+					inverseX >= 0 && inverseX < this.canvasSize &&
+					inverseY >= 0 && inverseY < this.canvasSize
+				) {
+					const row = Math.floor(inverseY / this.cellSize);
+					const column = Math.floor(inverseX / this.cellSize);
+
+					return fn(transformation, row, column);
+				}
+			}
+		};
 	}
 }
