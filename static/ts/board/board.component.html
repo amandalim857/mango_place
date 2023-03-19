@@ -1,0 +1,16 @@
+<canvas class="d-none" #backCanvas></canvas>
+<canvas
+	class="w-100 h-100"
+	(mousedown)="handleMouseDown()"
+	(mousemove)="handleMouseMove($event)"
+	(mouseout)="handleMouseUpOrOut()"
+	(mouseup)="handleMouseUpOrOut()"
+	(wheel)="handleWheel($event)"
+	#frontCanvas></canvas>
+
+<board-controls
+	class="position-absolute"
+	[defaultColor]="selectedColor"
+	[defaultMode]="selectedMode"
+	(changeColor)="selectedColor = $event"
+	(changeMode)="selectedMode = $event"></board-controls>
