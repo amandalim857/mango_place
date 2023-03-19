@@ -1,0 +1,16 @@
+{
+	"angularCompilerOptions": {
+		"strictTemplates": true
+	},
+
+	"compilerOptions": {
+		"experimentalDecorators": true,
+		"moduleResolution": "node",
+		"paths": {
+			"@mangoplace/*": ["./static/ts/*"]
+		},
+
+		"strict": true,
+		"target": "ES2022"
+	}
+}

@@ -1,0 +1,16 @@
+<div class="modal" tabindex="-1" #modal_div>
+	<div class="modal-dialog">
+	  <div class="modal-content border-0 shadow">
+		<div class="modal-header p-3">
+			<h4 class="modal-title fw-bolder">{{ title }}</h4>
+
+			<button type="button"
+				class="btn-close"
+				aria-label="Close"
+				(click)="close.emit()"></button>
+		</div>
+
+		<ng-content></ng-content>
+	  </div>
+	</div>
+</div>
