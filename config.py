@@ -1,0 +1,1 @@
+SECRET_KEY = "\xb2\nC#*\xa9\xc0P*s\x829\xc3b8\xca"
