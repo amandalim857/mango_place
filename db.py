@@ -7,6 +7,7 @@ class Database():
         self.conn = sqlite3.connect("schema.db")
         self.cur = self.conn.cursor()
 
+class UserTable(Database):
 
     def create_users_table(self):
         self.cur.execute("""
@@ -42,3 +43,36 @@ class Database():
         self.conn.commit()
         result = bcrypt.checkpw(userbytes, info[0])
         return result
+    
+
+class CanvasTable(Database):
+    def create_canvas_table(self):
+        self.cur.execute("""
+        CREATE TABLE IF NOT EXISTS canvas(
+            row_id INTEGER PRIMARY KEY,
+            column_list BLOB NOT NULL
+        );""")        
+        for id in range(128):
+            col_list = bytes([255]*384)
+            blob_data = sqlite3.Binary(col_list)
+            self.cur.execute("INSERT INTO canvas(row_id, column_list) values (?, ?);", (id, blob_data))
+        self.conn.commit()  
+    
+    def get_canvas_table(self):
+        self.cur.execute("SELECT column_list FROM canvas ORDER BY row_id")
+        rows = self.cur.fetchall()
+        for row in rows:
+            print(row[0]) # fix the decoding problem
+        return rows
+    
+    def delete_canvas_table(self):
+        self.cur.execute("DROP TABLE IF EXISTS canvas;")        
+    
+    def update_pixel(self, row_id):
+        self.cur.execute(row_id)
+        pass
+
+canvas_table = CanvasTable()
+canvas_table.delete_canvas_table()
+canvas_table.create_canvas_table()
+thing = canvas_table.get_canvas_table()
