@@ -1,5 +1,8 @@
 import sqlite3
 import bcrypt
+from PIL import Image
+import numpy as np
+import io
 
 class Database():
 
@@ -46,12 +49,20 @@ class UserTable(Database):
     
 
 class CanvasTable(Database):
+    def check_canvas_exists(self):
+        self.cur.execute(
+            """SELECT name FROM sqlite_master WHERE type='table' AND name='canvas';"""
+        )
+        canvas_exists = self.cur.fetchone()
+        return 1 if canvas_exists else 0
+        
+
     def create_canvas_table(self):
         self.cur.execute("""
         CREATE TABLE IF NOT EXISTS canvas(
             row_id INTEGER PRIMARY KEY,
             column_list BLOB NOT NULL
-        );""")        
+        );""")     
         for id in range(128):
             col_list = bytes([255]*384)
             blob_data = sqlite3.Binary(col_list)
@@ -59,20 +70,32 @@ class CanvasTable(Database):
         self.conn.commit()  
     
     def get_canvas_table(self):
+        grid = bytearray()
         self.cur.execute("SELECT column_list FROM canvas ORDER BY row_id")
         rows = self.cur.fetchall()
         for row in rows:
-            print(row[0]) # fix the decoding problem
-        return rows
+            column = row[0]
+            grid.extend(column)
+
+        nparray = np.frombuffer(grid, dtype=np.uint8).reshape((128, 128, 3))
+        img = Image.fromarray(nparray)
+        # save image and send as png
+        file = io.BytesIO()
+        img.save(file, format="PNG")
+        return file
     
     def delete_canvas_table(self):
         self.cur.execute("DROP TABLE IF EXISTS canvas;")        
-    
-    def update_pixel(self, row_id):
-        self.cur.execute(row_id)
-        pass
+
+class UserTimeTable(Database):
+    def create_usertimetable(self):
+        self.cur.execute("""
+        CREATE TABLE IF NOT EXISTS usertime(
+            row_id INTEGER PRIMARY KEY,
+            column_list BLOB NOT NULL
+        );""") 
 
 canvas_table = CanvasTable()
-canvas_table.delete_canvas_table()
 canvas_table.create_canvas_table()
-thing = canvas_table.get_canvas_table()
+canvas_table.get_canvas_table()
+canvas_table.delete_canvas_table()
