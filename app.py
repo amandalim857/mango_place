@@ -12,7 +12,7 @@ def index():
 	else:
 		redirect(url_for('login'))
 
-
+# Login/ Logout
 @app.route('/logout')
 def logout():
 	session.pop('username', None)
@@ -33,18 +33,19 @@ def login():
 			error = 'Username does not exist'
 		return render_template('login.html', error=error)
 
+# Canvas
 
-
-@app.route("/canvas")
+@app.route("/canvas", methods=['GET'])
 def get_canvas():
-	# retrieve entire canvas
-	pass
+	canvas = CanvasTable()
+	if not canvas.check_canvas_exists():
+		canvas.create_canvas_table()
+	return canvas.get_canvas_table()
 
-
-@app.route("/canvas/<int:x>/<int:y>")
-def update_pixel(pixel_id, rgb):
-	# update pixel to new rgb value
-    change_pixel(pixel_id, rgb)
+@app.route("/canvas/<int:row>/<int:col>")
+def update_pixel(row, col, userid, rgb, timestamp):
+	canvas = CanvasTable()
+	canvas.update_canvas(row, col, rgb)
 
 @app.route("/user/<int:user_id>/countdown")
 # prefixed w user to know it is from a user
