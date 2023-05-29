@@ -47,8 +47,8 @@ def update_pixel(row, col, userid, rgb, timestamp):
 	canvas = CanvasTable()
 	canvas.update_canvas(row, col, rgb)
 
-@app.route("/user/<int:user_id>/countdown")
-# prefixed w user to know it is from a user
-def get_countdown(user_id):
-	# get countdown left for user
-    retrieve_countdown(user_id)
+# @app.route("/user/<int:user_id>/countdown")
+# # prefixed w user to know it is from a user
+# def get_countdown(user_id):
+# 	# get countdown left for user
+#     retrieve_countdown(user_id)

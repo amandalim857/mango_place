@@ -3,6 +3,7 @@ import bcrypt
 from PIL import Image
 import numpy as np
 import io
+import datetime
 
 class Database():
 
@@ -26,23 +27,23 @@ class UserTable(Database):
         userbytes = password.encode("utf-8")
         salt = bcrypt.gensalt()
         hash = bcrypt.hashpw(userbytes, salt)
-        self.cur.execute("INSERT INTO users(username, password) values (?, ?)", (username, hash))
+        self.cur.execute("INSERT INTO users(username, password) values (?, ?);", (username, hash))
         self.conn.commit()
 
 
     def delete_user(self, username):
-        self.cur.execute("DELETE FROM users WHERE username == ?)", (username))
+        self.cur.execute("DELETE FROM users WHERE username == ?;", (username))
         self.conn.commit()
 
     # Login validation functions
     def valid_username(self, username):
-        username_exists = self.cur.execute("SELECT EXISTS(SELECT 1 FROM users WHERE username == ?)",(username))
+        username_exists = self.cur.execute("SELECT EXISTS(SELECT 1 FROM users WHERE username == ?);",(username))
         self.conn.commit()
         return username_exists
 
     def valid_login(self, username, password):
         userbytes = password.encode("utf-8")
-        info = self.cur.execute("SELECT password FROM users WHERE username == ?)",(username))
+        info = self.cur.execute("SELECT password FROM users WHERE username == ?;",(username))
         self.conn.commit()
         result = bcrypt.checkpw(userbytes, info[0])
         return result
@@ -71,7 +72,7 @@ class CanvasTable(Database):
     
     def get_canvas_table(self):
         grid = bytearray()
-        self.cur.execute("SELECT column_list FROM canvas ORDER BY row_id")
+        self.cur.execute("SELECT column_list FROM canvas ORDER BY row_id;")
         rows = self.cur.fetchall()
         for row in rows:
             column = row[0]
@@ -87,15 +88,32 @@ class CanvasTable(Database):
     def delete_canvas_table(self):
         self.cur.execute("DROP TABLE IF EXISTS canvas;")        
 
-class UserTimeTable(Database):
-    def create_usertimetable(self):
+class UserCooldownTable(Database):
+    def create_user_cooldown_table(self):
         self.cur.execute("""
-        CREATE TABLE IF NOT EXISTS usertime(
-            row_id INTEGER PRIMARY KEY,
-            column_list BLOB NOT NULL
-        );""") 
+        CREATE TABLE IF NOT EXISTS cooldowntable(
+            username TEXT UNIQUE PRIMARY KEY,
+            timestamp TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
+            FOREIGN KEY(username) REFERENCES users(username)
+        );""")
+        self.cur.execute("INSERT INTO cooldowntable(username) VALUES('liz');")
+        self.conn.commit()
+    
+    def is_cooldown_complete(self, username):
+        self.cur.execute("SELECT timestamp FROM cooldowntable WHERE username == ?;", (username,))
+        timestamp_tuple = self.cur.fetchone()
+        if timestamp_tuple is None:
+            return True
+        timestamp = timestamp_tuple[0]
+        now = datetime.datetime.utcnow()
+        timestamp_dt = datetime.datetime.fromisoformat(timestamp)
+        return now - timestamp_dt >= datetime.timedelta(minutes=5)
+    
+    def delete_user_cooldown_table(self):
+        self.cur.execute("DROP TABLE IF EXISTS cooldowntable;")
+        self.conn.commit()   
 
-canvas_table = CanvasTable()
-canvas_table.create_canvas_table()
-canvas_table.get_canvas_table()
-canvas_table.delete_canvas_table()
+usercooldown = UserCooldownTable()
+usercooldown.create_user_cooldown_table()
+print(usercooldown.is_cooldown_complete("liz"))
+usercooldown.delete_user_cooldown_table()
