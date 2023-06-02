@@ -1,4 +1,4 @@
-from flask import Flask, request, redirect, url_for, render_template, session
+from flask import Flask, request, redirect, url_for, render_template, session, Response, flash
 from config import SECRET_KEY
 from db import *
 
@@ -21,11 +21,12 @@ def logout():
 @app.route("/login", methods=['POST','GET'])
 def login():
 	error = None
+	users = UserTable()
 	if request.method == 'POST':
 		username = request.form["username"]
 		password = request.form["password"]
-		if valid_username(username):
-			if valid_login(username, password):
+		if users.valid_username(username):
+			if users.valid_login(username, password):
 				session['username'] = username
 				return render_template('canvas.html')
 			error = 'Incorrect password'
@@ -34,21 +35,39 @@ def login():
 		return render_template('login.html', error=error)
 
 # Canvas
-
 @app.route("/canvas", methods=['GET'])
 def get_canvas():
 	canvas = CanvasTable()
-	if not canvas.check_canvas_exists():
+	if not canvas.canvas_exists():
 		canvas.create_canvas_table()
-	return canvas.get_canvas_table()
+	img_file = canvas.get_canvas_table()
+	img = img_file.getvalue()
+	return Response(response=img, mimetype='image/png')
 
-@app.route("/canvas/<int:row>/<int:col>")
-def update_pixel(row, col, userid, rgb, timestamp):
-	canvas = CanvasTable()
-	canvas.update_canvas(row, col, rgb)
+# Pixel Data
+@app.route("/canvas/<int:row>/<int:col>", method=['PUT'])
+def place_pixel(row, col):
+	hexcolor = request.args.get('hexcolor')
+	# username = session["username"]
+	username = "megan"
+	red, green, blue = bytes.fromhex(hexcolor)
+	rgb = [red, green, blue]
+	canvas, pixel_table, countdown_table = CanvasTable(), PixelTable(), CountdownTable()
+	timestamp = datetime.datetime.utcnow()
+	time_waited = countdown_table.seconds_waited(username)
 
-# @app.route("/user/<int:user_id>/countdown")
-# # prefixed w user to know it is from a user
-# def get_countdown(user_id):
-# 	# get countdown left for user
-#     retrieve_countdown(user_id)
+	if time_waited >= 300:
+		canvas.update_canvas(row, col, rgb)
+		pixel_table.upsert_pixel_data(row, col, username, rgb, timestamp)
+		countdown_table.upsert_user_timestamp(username, timestamp)
+		flash(f'Inserted {row}, {col}')
+	else:
+		min_left = (300 - time_waited) // 60
+		flash(f'You have to wait {min_left} min more before placing your next tile!')
+
+
+users, canvas, pixel_table, countdown_table = UserTable(), CanvasTable(), PixelTable(), CountdownTable()
+users.create_users_table()
+canvas.create_canvas_table() 
+pixel_table.create_pixel_table()
+countdown_table.create_countdown_table()
