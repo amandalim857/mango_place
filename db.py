@@ -16,12 +16,10 @@ class UserTable(Database):
     def create_users_table(self):
         self.cur.execute("""
         CREATE TABLE IF NOT EXISTS users(
-            id INTEGER PRIMARY KEY autoincrement,
-            username TEXT UNIQUE NOT NULL,
+            username TEXT UNIQUE NOT NULL PRIMARY KEY,
             password TEXT NOT NULL
         );""")
         self.conn.commit()
-
 
     def add_user(self, username, password):
         userbytes = password.encode("utf-8")
@@ -29,7 +27,6 @@ class UserTable(Database):
         hash = bcrypt.hashpw(userbytes, salt)
         self.cur.execute("INSERT INTO users(username, password) values (?, ?);", (username, hash))
         self.conn.commit()
-
 
     def delete_user(self, username):
         self.cur.execute("DELETE FROM users WHERE username == ?;", (username))
@@ -50,13 +47,6 @@ class UserTable(Database):
     
 
 class CanvasTable(Database):
-    def check_canvas_exists(self):
-        self.cur.execute(
-            """SELECT name FROM sqlite_master WHERE type='table' AND name='canvas';"""
-        )
-        canvas_exists = self.cur.fetchone()
-        return 1 if canvas_exists else 0
-        
 
     def create_canvas_table(self):
         self.cur.execute("""
@@ -85,35 +75,93 @@ class CanvasTable(Database):
         img.save(file, format="PNG")
         return file
     
+    def update_canvas_pixel(self, row_id, col_id, color):
+        # color is a list of 3 values
+        self.cur.execute("SELECT column_list FROM canvas WHERE row_id == ?", (row_id,))
+        column_list = list(self.cur.fetchone()[0])
+        corr_col_id = col_id * 3
+        for i in range(3):
+            column_list[corr_col_id + i] = color[i]
+        new_blob_data = sqlite3.Binary(bytes(column_list))
+        self.cur.execute("UPDATE canvas SET column_list = ? WHERE row_id = ?", (new_blob_data, row_id))
+        self.conn.commit()
+    
     def delete_canvas_table(self):
         self.cur.execute("DROP TABLE IF EXISTS canvas;")        
 
-class UserCooldownTable(Database):
-    def create_user_cooldown_table(self):
+class PixelTable(Database):
+
+    def create_pixel_table(self):
         self.cur.execute("""
-        CREATE TABLE IF NOT EXISTS cooldowntable(
-            username TEXT UNIQUE PRIMARY KEY,
-            timestamp TEXT DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        CREATE TABLE IF NOT EXISTS pixeltable(
+            row_id INTEGER NOT NULL,
+            col_id INTEGER NOT NULL,
+            username TEXT NOT NULL,
+            color BLOB NOT NULL,
+            timestamp TEXT NOT NULL,
+            PRIMARY KEY(row_id, col_id),
             FOREIGN KEY(username) REFERENCES users(username)
         );""")
-        self.cur.execute("INSERT INTO cooldowntable(username) VALUES('liz');")
         self.conn.commit()
     
-    def is_cooldown_complete(self, username):
-        self.cur.execute("SELECT timestamp FROM cooldowntable WHERE username == ?;", (username,))
+    def upsert_pixel_data(self, row_id, col_id, username, color, timestamp):
+        # color is a list of 3 values, timestamp is datetime object
+        blob_data = sqlite3.Binary(bytes(color))
+        self.cur.execute("""
+        INSERT INTO pixeltable(row_id, col_id, username, color, timestamp)
+        VALUES(?, ?, ?, ?, ?)
+        ON CONFLICT(row_id, col_id)
+        DO UPDATE SET username = ?,
+        color = ?,
+        timestamp = ?
+        ;""", (row_id, col_id, username, blob_data, timestamp, username, blob_data, timestamp))
+    
+    def get_pixel_data(self, row_id, col_id):
+        self.cur.execute("SELECT * FROM pixeltable WHERE row_id == ? AND col_id == ?", (row_id, col_id))
+        data = self.cur.fetchone()
+        return data
+    
+    def get_all_pixel_data(self):
+        self.cur.execute("SELECT * FROM pixeltable")
+        data = self.cur.fetchall()
+        return data
+    
+    def delete_pixel_table(self):
+        self.cur.execute("DROP TABLE IF EXISTS pixeltable;")
+        self.conn.commit()  
+
+class CountdownTable(Database):
+    
+    def create_countdown_table(self):
+        self.cur.execute("""
+        CREATE TABLE IF NOT EXISTS countdowntable(
+            username TEXT UNIQUE PRIMARY KEY,
+            timestamp TEXT NOT NULL,
+            FOREIGN KEY(username) REFERENCES users(username)
+        );""")
+        self.conn.commit()
+    
+    def upsert_user_timestamp(self, username, timestamp):
+        self.cur.execute("""
+        INSERT INTO countdowntable(username, timestamp)
+        VALUES(?, ?) 
+        ON CONFLICT(username)
+        DO UPDATE SET timestamp= ?
+        ;""", (username, timestamp, timestamp))
+        self.conn.commit()
+
+    def seconds_waited(self, username):
+        self.cur.execute("SELECT timestamp FROM countdowntable WHERE username == ?;", (username,))
         timestamp_tuple = self.cur.fetchone()
         if timestamp_tuple is None:
-            return True
-        timestamp = timestamp_tuple[0]
+            return 500
+        last_timestamp = datetime.datetime.strptime(timestamp_tuple[0], '%Y-%m-%d %H:%M:%S.%f')
         now = datetime.datetime.utcnow()
-        timestamp_dt = datetime.datetime.fromisoformat(timestamp)
-        return now - timestamp_dt >= datetime.timedelta(minutes=5)
+        return (now - last_timestamp).total_seconds()
     
-    def delete_user_cooldown_table(self):
-        self.cur.execute("DROP TABLE IF EXISTS cooldowntable;")
+    def delete_user_countdown_table(self):
+        self.cur.execute("DROP TABLE IF EXISTS countdowntable;")
         self.conn.commit()   
 
-usercooldown = UserCooldownTable()
-usercooldown.create_user_cooldown_table()
-print(usercooldown.is_cooldown_complete("liz"))
-usercooldown.delete_user_cooldown_table()
+# canvas = CanvasTable()
+# canvas.get_canvas_table()
