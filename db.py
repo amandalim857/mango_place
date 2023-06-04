@@ -8,8 +8,8 @@ import datetime
 
 class Database():
 
-    def __init__(self):
-        self.conn = sqlite3.connect("schema.db")
+    def __init__(self, testing=False):
+        self.conn = sqlite3.connect(":memory" if testing else "schema.db")
         self.cur = self.conn.cursor()
 
 class UserTable(Database):
@@ -46,7 +46,7 @@ class UserTable(Database):
         self.conn.commit()
         result = bcrypt.checkpw(userbytes, info[0])
         return result
-    
+
 
 class CanvasTable(Database):
 
@@ -54,19 +54,19 @@ class CanvasTable(Database):
         self.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='canvas';")
         canvas_exists = self.cur.fetchone()
         return 1 if canvas_exists else 0
-    
+
     def create_canvas_table(self):
         self.cur.execute("""
         CREATE TABLE IF NOT EXISTS canvas(
             row_id INTEGER PRIMARY KEY,
             column_list BLOB NOT NULL
-        );""")     
+        );""")
         for id in range(128):
             col_list = bytes([255]*384)
             blob_data = sqlite3.Binary(col_list)
             self.cur.execute("INSERT INTO canvas(row_id, column_list) values (?, ?);", (id, blob_data))
-        self.conn.commit()  
-    
+        self.conn.commit()
+
     def get_canvas_table(self):
         grid = bytearray()
         self.cur.execute("SELECT column_list FROM canvas ORDER BY row_id;")
@@ -81,7 +81,7 @@ class CanvasTable(Database):
         file = io.BytesIO()
         img.save(file, format="PNG")
         return file
-    
+
     def update_canvas_pixel(self, row_id, col_id, color):
         # color is a list of 3 values
         self.cur.execute("SELECT column_list FROM canvas WHERE row_id == ?", (row_id,))
@@ -92,9 +92,9 @@ class CanvasTable(Database):
         new_blob_data = sqlite3.Binary(bytes(column_list))
         self.cur.execute("UPDATE canvas SET column_list = ? WHERE row_id = ?", (new_blob_data, row_id))
         self.conn.commit()
-    
+
     def delete_canvas_table(self):
-        self.cur.execute("DROP TABLE IF EXISTS canvas;")        
+        self.cur.execute("DROP TABLE IF EXISTS canvas;")
 
 class PixelTable(Database):
 
@@ -110,7 +110,7 @@ class PixelTable(Database):
             FOREIGN KEY(username) REFERENCES users(username)
         );""")
         self.conn.commit()
-    
+
     def upsert_pixel_data(self, row_id, col_id, username, color, timestamp):
         # color is a list of 3 values, timestamp is datetime object
         blob_data = sqlite3.Binary(bytes(color))
@@ -122,23 +122,23 @@ class PixelTable(Database):
         color = ?,
         timestamp = ?
         ;""", (row_id, col_id, username, blob_data, timestamp, username, blob_data, timestamp))
-    
+
     def get_pixel_data(self, row_id, col_id):
         self.cur.execute("SELECT * FROM pixeltable WHERE row_id == ? AND col_id == ?", (row_id, col_id))
         data = self.cur.fetchone()
         return data
-    
+
     def get_all_pixel_data(self):
         self.cur.execute("SELECT * FROM pixeltable")
         data = self.cur.fetchall()
         return data
-    
+
     def delete_pixel_table(self):
         self.cur.execute("DROP TABLE IF EXISTS pixeltable;")
-        self.conn.commit()  
+        self.conn.commit()
 
 class CountdownTable(Database):
-    
+
     def create_countdown_table(self):
         self.cur.execute("""
         CREATE TABLE IF NOT EXISTS countdowntable(
@@ -147,11 +147,11 @@ class CountdownTable(Database):
             FOREIGN KEY(username) REFERENCES users(username)
         );""")
         self.conn.commit()
-    
+
     def upsert_user_timestamp(self, username, timestamp):
         self.cur.execute("""
         INSERT INTO countdowntable(username, timestamp)
-        VALUES(?, ?) 
+        VALUES(?, ?)
         ON CONFLICT(username)
         DO UPDATE SET timestamp= ?
         ;""", (username, timestamp, timestamp))
@@ -165,9 +165,9 @@ class CountdownTable(Database):
         last_timestamp = datetime.datetime.strptime(timestamp_tuple[0], '%Y-%m-%d %H:%M:%S.%f')
         now = datetime.datetime.utcnow()
         return (now - last_timestamp).total_seconds()
-    
+
     def delete_user_countdown_table(self):
         self.cur.execute("DROP TABLE IF EXISTS countdowntable;")
-        self.conn.commit()   
+        self.conn.commit()
 
 users = UserTable()
