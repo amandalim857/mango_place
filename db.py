@@ -30,18 +30,19 @@ class UserTable(Database):
         self.conn.commit()
 
     def delete_user(self, username):
-        self.cur.execute("DELETE FROM users WHERE username == ?;", (username))
+        self.cur.execute("DELETE FROM users WHERE username == ?;", (username,))
         self.conn.commit()
 
     # Login validation functions
     def valid_username(self, username):
-        username_exists = self.cur.execute("SELECT EXISTS(SELECT 1 FROM users WHERE username == ?);",(username))
-        self.conn.commit()
-        return username_exists
+        self.cur.execute("SELECT EXISTS(SELECT 1 FROM users WHERE username == ?);",(username,))
+        username_exists = self.cur.fetchone()
+        return True if username_exists else False
 
     def valid_login(self, username, password):
         userbytes = password.encode("utf-8")
-        info = self.cur.execute("SELECT password FROM users WHERE username == ?;",(username))
+        self.cur.execute("SELECT password FROM users WHERE username == ?;",(username,))
+        info = self.cur.fetchone()[0]
         self.conn.commit()
         result = bcrypt.checkpw(userbytes, info[0])
         return result
@@ -169,5 +170,4 @@ class CountdownTable(Database):
         self.cur.execute("DROP TABLE IF EXISTS countdowntable;")
         self.conn.commit()   
 
-# canvas = CanvasTable()
-# canvas.get_canvas_table()
+users = UserTable()
