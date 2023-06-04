@@ -8,8 +8,8 @@ import datetime
 
 class Database():
 
-    def __init__(self, testing=False):
-        self.conn = sqlite3.connect(":memory" if testing else "schema.db")
+    def __init__(self, database_path="schema.db"):
+        self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
 
 class UserTable(Database):
@@ -36,14 +36,16 @@ class UserTable(Database):
     # Login validation functions
     def valid_username(self, username):
         self.cur.execute("SELECT EXISTS(SELECT 1 FROM users WHERE username == ?);",(username,))
-        username_exists = self.cur.fetchone()
-        return True if username_exists else False
+        return True if self.cur.fetchone()[0] == 1 else False
 
     def valid_login(self, username, password):
         userbytes = password.encode("utf-8")
         self.cur.execute("SELECT password FROM users WHERE username == ?;",(username,))
-        info = self.cur.fetchone()[0]
-        self.conn.commit()
+        info = self.cur.fetchone()
+
+        if info is None:
+            return False
+
         result = bcrypt.checkpw(userbytes, info[0])
         return result
 
@@ -169,5 +171,3 @@ class CountdownTable(Database):
     def delete_user_countdown_table(self):
         self.cur.execute("DROP TABLE IF EXISTS countdowntable;")
         self.conn.commit()
-
-users = UserTable()
