@@ -1,5 +1,5 @@
 import pytest
-from db import *
+from . import db
 
 @pytest.fixture(scope="function")
 def username():
@@ -20,3 +20,25 @@ class TestUsers:
 
         assert user_table.valid_username(username)
         assert user_table.valid_username("hello")
+    
+    def test_delete_user(self, user_table, username):
+        user_table.add_user(username, password)
+        user_table.delete_user(username)
+
+        assert not user_table.valid_username(username)
+
+    def test_valid_login(self, user_table, username, password):
+        user_table.add_user(username, password)
+        
+        assert user_table.valid_login(username, password)
+        assert not user_table.valid_login(username, "sprongle")
+        assert not user_table.valid_login("springle", "sprongle")
+        assert not user_table.valid_login("springle", password)
+
+        user_table.delete_user(username)
+        assert not user_table.valid_login(username, password)
+        assert not user_table.valid_login("springle", password)
+        assert not user_table.valid_login(username, "sprongle")
+
+# class TestCanvas():
+#     def 

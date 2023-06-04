@@ -1,5 +1,5 @@
 import pytest
-from db import *
+from . import db
 
 @pytest.fixture(scope="session")
 def user_table():
