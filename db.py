@@ -1,5 +1,6 @@
 import sqlite3
 import bcrypt
+import math
 from PIL import Image
 import numpy as np
 import io
@@ -48,6 +49,11 @@ class UserTable(Database):
 
 class CanvasTable(Database):
 
+    def canvas_exists(self):
+        self.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='canvas';")
+        canvas_exists = self.cur.fetchone()
+        return 1 if canvas_exists else 0
+    
     def create_canvas_table(self):
         self.cur.execute("""
         CREATE TABLE IF NOT EXISTS canvas(
@@ -154,7 +160,7 @@ class CountdownTable(Database):
         self.cur.execute("SELECT timestamp FROM countdowntable WHERE username == ?;", (username,))
         timestamp_tuple = self.cur.fetchone()
         if timestamp_tuple is None:
-            return 500
+            return math.inf
         last_timestamp = datetime.datetime.strptime(timestamp_tuple[0], '%Y-%m-%d %H:%M:%S.%f')
         now = datetime.datetime.utcnow()
         return (now - last_timestamp).total_seconds()
