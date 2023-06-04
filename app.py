@@ -45,7 +45,7 @@ def get_canvas():
 	return Response(response=img, mimetype='image/png')
 
 # Pixel Data
-@app.route("/canvas/<int:row>/<int:col>", method=['PUT'])
+@app.route("/canvas/<int:row>/<int:col>", methods=['PUT'])
 def place_pixel(row, col):
 	hexcolor = request.args.get('hexcolor')
 	# username = session["username"]
@@ -68,6 +68,7 @@ def place_pixel(row, col):
 
 users, canvas, pixel_table, countdown_table = UserTable(), CanvasTable(), PixelTable(), CountdownTable()
 users.create_users_table()
-canvas.create_canvas_table() 
+if not canvas.canvas_exists():
+	canvas.create_canvas_table() 
 pixel_table.create_pixel_table()
 countdown_table.create_countdown_table()
