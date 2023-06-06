@@ -76,7 +76,6 @@ class TestCanvas():
 
         canvas.update_canvas_pixel(1, 1, [75, 156, 211])
         img = Image.open(canvas.get_canvas_table())
-        img.show()
         r, g, b = img.getpixel((1, 1))
         assert [r, g, b] == [75, 156, 211]
         img.close()
