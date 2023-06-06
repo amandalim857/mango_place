@@ -66,14 +66,20 @@ class TestCanvas():
         canvas.update_canvas_pixel(3, 4, [30, 144, 255])
         canvas.update_canvas_pixel(1, 1, [255, 165, 0])
         canvas_table = canvas.get_canvas_table()
-        with Image.open(canvas_table) as img:
-            assert img.size == (128, 128)
-            r, g, b = img.getpixel((4, 3))
-            assert [r, g, b] == [30, 144, 255]
+        img = Image.open(canvas_table)
+        assert img.size == (128, 128)
+        r, g, b = img.getpixel((4, 3))
+        assert [r, g, b] == [30, 144, 255]
+        
+        r, g, b = img.getpixel((1, 1))
+        assert [r, g, b] == [255, 165, 0]
 
-            r, g, b = img.getpixel((1, 1))
-            assert [r, g, b] == [255, 165, 0]
-
+        canvas.update_canvas_pixel(1, 1, [75, 156, 211])
+        img = Image.open(canvas.get_canvas_table())
+        img.show()
+        r, g, b = img.getpixel((1, 1))
+        assert [r, g, b] == [75, 156, 211]
+        img.close()
 
     def test_delete_canvas_table(self, canvas):
         canvas.create_canvas_table()
