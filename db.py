@@ -44,7 +44,8 @@ class UserTable(Database):
         info = self.cur.fetchone()
         if info is None:
             return False
-        result = bcrypt.checkpw(userbytes, info[0])
+
+        result = bcrypt.checkpw(userbytes, info[0].encode())
         return result
 
 
@@ -65,7 +66,7 @@ class CanvasTable(Database):
             col_list = bytes([255]*384)
             blob_data = sqlite3.Binary(col_list)
             self.cur.execute("""
-            INSERT INTO canvas(row_id, column_list) 
+            INSERT INTO canvas(row_id, column_list)
             VALUES(?, ?)
             ON CONFLICT(row_id)
             DO UPDATE SET column_list = ?
@@ -122,11 +123,13 @@ class PixelTable(Database):
         self.cur.execute("""
         INSERT INTO pixeltable(row_id, col_id, username, color, timestamp)
         VALUES(?, ?, ?, ?, ?)
-        ON CONFLICT(row_id, col_id) DO UPDATE 
-        SET username = EXCLUDED.username, 
-            color = EXCLUDED.color, 
+        ON CONFLICT(row_id, col_id) DO UPDATE
+        SET username = EXCLUDED.username,
+            color = EXCLUDED.color,
             timestamp = EXCLUDED.timestamp
         ;""", (row_id, col_id, username, blob_data, timestamp))
+
+        self.conn.commit()
 
     def get_pixel_data(self, row_id, col_id):
         self.cur.execute("SELECT * FROM pixeltable WHERE row_id == ? AND col_id == ?", (row_id, col_id))
