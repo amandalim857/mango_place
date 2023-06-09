@@ -186,7 +186,12 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		this.resizeCanvas();
 
 		this.animator = new Animator({
-			image: new BoardImage(this.boardSize),
+			image: new BoardImage(
+				this.boardSize,
+				"/canvas",
+				async () => await this.queueForcefulRerender()
+			),
+
 			transformation: {
 				x: (window.innerWidth - this.canvasSize) / 2,
 				y: (window.innerHeight - this.canvasSize) / 2,
@@ -209,7 +214,6 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 		window.addEventListener("resize", this.handleWindowResize);
 
 		await this.queueForcefulRerender();
-
 		await this.animator.render();
 
 		this.animator.destroy();
@@ -240,11 +244,15 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 				duration: 0,
 				executor: state => {
 					this.withCoordinates((_, row, column) => {
+						const color = this.selectedColor;
+
 						state.image.setPixel({
 							row,
 							column,
-							color: this.selectedColor
+							color
 						});
+
+						this.placePixelRemotely(row, column, color);
 					})(state.transformation);
 				}
 			})
@@ -282,6 +290,12 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	): void {
 		transformation.x += deltaX;
 		transformation.y += deltaY;
+	}
+
+	private placePixelRemotely(row: number, column: number, color: string): void {
+		fetch(`/canvas/${row}/${column}?hexcolor=${encodeURIComponent(color)}`, {
+			method: "PUT"
+		});
 	}
 
 	private zoomAbsolutely(

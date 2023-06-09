@@ -7,40 +7,39 @@ app.secret_key = SECRET_KEY
 
 @app.route("/")
 def index():
-	if "username" in session:
-		return render_template('canvas.html')
-	else:
-		redirect(url_for("login"))
+	return render_template('index.html', authenticated="username" in session)
 
 # Login/ Logout
-@app.route("/signup", methods=['POST','GET'])
+@app.route("/signup", methods=['POST'])
 def signup():
 	users = UserTable()
-	if request.method == 'POST':
-		username = request.form["username"]
-		password = request.form["password"]
-		if users.valid_username(username):
-			return redirect(url_for("index"), error="account_exists")
-		users.add_user(username, password)
-		return redirect(url_for("index"))
+	username = request.form["username"]
+	password = request.form["password"]
 
-@app.route("/login", methods=['POST','GET'])
+	if users.valid_username(username):
+		return redirect(url_for("index", error="account_exists"))
+
+	users.add_user(username, password)
+
+	return redirect(url_for("index"))
+
+@app.route("/login", methods=['POST'])
 def login():
 	error = None
+
 	users = UserTable()
-	if request.method == 'POST':
-		if username not in request or password not in request:
-			flash("Username or password missing") # TODO
-		username = request.form["username"]
-		password = request.form["password"]
-		if users.valid_username(username):
-			if users.valid_login(username, password):
-				session['username'] = username
-				return render_template('canvas.html')
-			error = 'Incorrect password'
+	username = request.form["username"]
+	password = request.form["password"]
+
+	if users.valid_username(username):
+		if users.valid_login(username, password):
+			session['username'] = username
 		else:
-			error = 'Username does not exist'
-		return render_template('login.html', error=error)
+			error = 'incorrect_password'
+	else:
+		error = 'nonexistent_username'
+
+	return redirect(url_for('index', error=error))
 
 @app.route('/logout')
 def logout():
@@ -62,26 +61,27 @@ def get_canvas():
 def place_pixel(row, col):
 	hexcolor = request.args.get('hexcolor')
 	username = session["username"]
-	red, green, blue = bytes.fromhex(hexcolor)
+	red, green, blue = bytes.fromhex(hexcolor[1:])
 	rgb = [red, green, blue]
 	canvas, pixel_table, countdown_table = CanvasTable(), PixelTable(), CountdownTable()
 	timestamp = datetime.datetime.utcnow()
 	time_waited = countdown_table.seconds_waited(username)
 
 	if time_waited >= 300:
-		canvas.update_canvas(row, col, rgb)
+		canvas.update_canvas_pixel(row, col, rgb)
 		pixel_table.upsert_pixel_data(row, col, username, rgb, timestamp)
 		countdown_table.upsert_user_timestamp(username, timestamp)
-	else:
-		seconds_left = (300 - time_waited)
-		response = make_response(f"You have to wait {seconds_left} seconds more before placing your next tile!", 429)
-		response.mimetype = "text/plain"
-		response.headers["Retry-After"] = seconds_left
-		return response
+		return Response()
+
+	seconds_left = (300 - time_waited)
+	response = make_response(f"You have to wait {seconds_left} seconds more before placing your next tile!", 429)
+	response.mimetype = "text/plain"
+	response.headers["Retry-After"] = seconds_left
+	return response
 
 users, canvas, pixel_table, countdown_table = UserTable(), CanvasTable(), PixelTable(), CountdownTable()
 users.create_users_table()
 if not canvas.canvas_exists():
-	canvas.create_canvas_table() 
+	canvas.create_canvas_table()
 pixel_table.create_pixel_table()
 countdown_table.create_countdown_table()
