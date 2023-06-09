@@ -47,11 +47,16 @@ class UserTable(Database):
         info = self.cur.fetchone()
         if info is None:
             return False
+<<<<<<< HEAD
         if type(info[0]) == str:
             data = info[0].encode()
         else:
             data = info[0]
         result = bcrypt.checkpw(userbytes, data)
+=======
+
+        result = bcrypt.checkpw(userbytes, info[0].encode())
+>>>>>>> a9f5561 (Integrated log in, sign in, canvas loading, and pixel placement between the frontend and backend)
         return result
 
 
@@ -132,6 +137,8 @@ class PixelTable(Database):
             color = EXCLUDED.color,
             timestamp = EXCLUDED.timestamp
         ;""", (row_id, col_id, username, blob_data, timestamp))
+        self.conn.commit()
+
         self.conn.commit()
 
     def get_pixel_data(self, row_id, col_id):

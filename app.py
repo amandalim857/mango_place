@@ -71,7 +71,7 @@ def create_app(database_path='schema.db'):
 		img_file = canvas.get_canvas_table()
 		img = img_file.getvalue()
 		return Response(response=img, mimetype='image/png')
-	
+
 	# Pixel Data
 	@app.route('/canvas/<int:row>/<int:col>', methods=['PUT'])
 	@logged_in
@@ -90,7 +90,7 @@ def create_app(database_path='schema.db'):
 		if len(colors) != 3:
 			return make_response('the hex must contain exactly 3 colors', 400)
 		rgb = [color for color in colors]
-		canvas, pixel_table, countdown_table = CanvasTable(database_path), PixelTable(database_path), CountdownTable(database_path)			
+		canvas, pixel_table, countdown_table = CanvasTable(database_path), PixelTable(database_path), CountdownTable(database_path)
 		timestamp = helper.helper_datetime_utcnow()
 		time_waited = countdown_table.seconds_waited(username)
 		if time_waited >= 300:
