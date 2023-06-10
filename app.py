@@ -2,7 +2,7 @@ from flask import Flask, request, redirect, url_for, render_template, session, R
 from config import SECRET_KEY
 from db import *
 
-def create_app():
+def create_app(database_path="schema.db"):
 	app = Flask(__name__)
 	app.secret_key = SECRET_KEY
 
@@ -13,7 +13,7 @@ def create_app():
 	# Login/ Logout
 	@app.route("/signup", methods=['POST'])
 	def signup():
-		users = UserTable()
+		users = UserTable(database_path)
 		username = request.form["username"]
 		password = request.form["password"]
 
@@ -28,7 +28,7 @@ def create_app():
 	def login():
 		error = None
 
-		users = UserTable()
+		users = UserTable(database_path)
 		username = request.form["username"]
 		password = request.form["password"]
 		if users.valid_username(username):
@@ -49,7 +49,7 @@ def create_app():
 	# Canvas
 	@app.route("/canvas", methods=['GET'])
 	def get_canvas():
-		canvas = CanvasTable()
+		canvas = CanvasTable(database_path)
 		if not canvas.canvas_exists():
 			canvas.create_canvas_table()
 		img_file = canvas.get_canvas_table()
@@ -63,7 +63,7 @@ def create_app():
 		username = session["username"]
 		red, green, blue = bytes.fromhex(hexcolor[1:])
 		rgb = [red, green, blue]
-		canvas, pixel_table, countdown_table = CanvasTable(), PixelTable(), CountdownTable()
+		canvas, pixel_table, countdown_table = CanvasTable(database_path), PixelTable(database_path), CountdownTable(database_path)
 		timestamp = datetime.datetime.utcnow()
 		time_waited = countdown_table.seconds_waited(username)
 
@@ -79,7 +79,7 @@ def create_app():
 		response.headers["Retry-After"] = seconds_left
 		return response
 
-	users, canvas, pixel_table, countdown_table = UserTable(), CanvasTable(), PixelTable(), CountdownTable()
+	users, canvas, pixel_table, countdown_table = UserTable(database_path), CanvasTable(database_path), PixelTable(database_path), CountdownTable(database_path)
 	users.create_users_table()
 	if not canvas.canvas_exists():
 		canvas.create_canvas_table()
