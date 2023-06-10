@@ -5,10 +5,9 @@ from urllib.parse import urlparse
 
 @pytest.fixture
 def app(tmp_database_path):
-    app = create_app()
+    app = create_app(database_path=tmp_database_path)
     app.config['TESTING'] = True
-    app.config['DATABASE'] = tmp_database_path
-    
+
     yield app
 
 @pytest.fixture
