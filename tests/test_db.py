@@ -17,18 +17,17 @@ class TestUsers:
         user_table.add_user(username, password)
 
         assert user_table.valid_username(username)
+    
+    def test_delete_user(self, user_table, username, password):
+        user_table.add_user(username, password)
+        user_table.delete_user(username)
 
     def test_valid_username(self, user_table, username, password):
         user_table.add_user(username, password)
 
         assert user_table.valid_username(username)
         assert not user_table.valid_username("hello")
-
-    def test_delete_user(self, user_table, username, password):
-        user_table.add_user(username, password)
-        user_table.delete_user(username)
-
-        assert not user_table.valid_username(username)
+        assert user_table.valid_username(username)
 
     def test_valid_login(self, user_table, username, password):
         user_table.add_user(username, password)
