@@ -45,7 +45,7 @@ class UserTable(Database):
         if info is None:
             return False
 
-        result = bcrypt.checkpw(userbytes, info[0].encode())
+        result = bcrypt.checkpw(userbytes, info[0])
         return result
 
 
@@ -128,6 +128,7 @@ class PixelTable(Database):
             color = EXCLUDED.color,
             timestamp = EXCLUDED.timestamp
         ;""", (row_id, col_id, username, blob_data, timestamp))
+        self.conn.commit()
 
         self.conn.commit()
 
