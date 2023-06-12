@@ -29,3 +29,4 @@ def pixel_table(tmp_database_path):
 def countdown_table(tmp_database_path):
     countdown_table = CountdownTable(database_path=tmp_database_path)
     yield countdown_table
+

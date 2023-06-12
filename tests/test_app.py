@@ -1,7 +1,9 @@
 import pytest
+import datetime
+import helper
 from app import create_app
 from urllib.parse import urlparse
-
+from pytest_mock import mocker
 
 @pytest.fixture
 def app(tmp_database_path):
@@ -46,21 +48,43 @@ def test_login(client):
     assert urlparse(rv.location).path == '/'
     assert urlparse(rv.location).query == 'error=incorrect_password'
 
+def test_logout(client):
+    client.post('/signup', data={'username':'hobo', 'password':'password'})
+    client.post('/login', data={'username':'hobo', 'password':'password'})
+    rv = client.get('/logout')
+    assert rv.status_code == 302
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':'#3399FF'})
+    assert rv.status_code == 401
 
 def test_get_canvas(client):
     rv = client.get('/canvas')
     assert rv.status_code == 200
     assert rv.mimetype == 'image/png'
 
-# to do: post and make sure canvas updates and it persists,
-# change same pixel and make sure that it changes and persists
-# put another bunch of pixels to make a :| face
-# and then test the time function and the 409 error i shld be getting
-# else get status 200
-# def test_place_pixel(client):
-#         client.post('/signup', data={'username':'jimbob', 'password':'password'})
-#         client.post('/login', data={'username':'jimbob', 'password':'password'})
-#         rv = client.put('/canvas/4/3', query_string={'hexcolor':'3399FF'})
-#         print(rv.status_code)
-#         assert rv.status_code == 200
-#         assert list(db.get_pixel_data(4, 3)) == [30, 144, 255]
+def test_place_pixel(client):
+    # user not logged in
+    rv = client.put('/canvas/4/3', query_string={'hexcolor':'#3399FF'})
+    assert rv.status_code == 401
+    
+    client.post('/signup', data={'username':'jimbob', 'password':'password'})
+    client.post('/login', data={'username':'jimbob', 'password':'password'})
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':'#3399FF'})
+    assert rv.status_code == 200
+
+    rv = client.put('/canvas/4/3', query_string={'hexcolor':'#daa520'})
+    assert rv.status_code == 429
+
+
+def test_place_pixel_time_limit(client, mocker):
+    client.post('/signup', data={'username':'jades', 'password':'password'})
+    client.post('/login', data={'username':'jades', 'password':'password'})
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':'#ffaa00'})
+    assert rv.status_code == 200
+
+    mocker.patch('helper.helper_datetime_utcnow', return_value = datetime.datetime.utcnow() + datetime.timedelta(minutes=3))
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':'#3399FF'})
+    assert rv.status_code == 429
+
+    helper.helper_datetime_utcnow.return_value = datetime.datetime.utcnow() + datetime.timedelta(minutes=5)
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':'#3399FF'})
+    assert rv.status_code == 200
