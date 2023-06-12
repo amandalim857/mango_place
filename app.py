@@ -1,6 +1,7 @@
 from flask import Flask, request, redirect, url_for, render_template, session, Response, make_response
 from config import SECRET_KEY
 from db import *
+import helper
 
 def create_app(database_path="schema.db"):
 	app = Flask(__name__)
@@ -55,18 +56,22 @@ def create_app(database_path="schema.db"):
 		img_file = canvas.get_canvas_table()
 		img = img_file.getvalue()
 		return Response(response=img, mimetype='image/png')
-
+	
 	# Pixel Data
 	@app.route("/canvas/<int:row>/<int:col>", methods=['PUT'])
 	def place_pixel(row, col):
 		hexcolor = request.args.get('hexcolor')
-		username = session["username"]
+		try:
+			username = session["username"]
+		except KeyError:
+			response = make_response("You need to be logged in to add a pixel", 401)
+			response.headers['WWW-Authenticate'] = 'Basic realm="Login required"'
+			return response
 		red, green, blue = bytes.fromhex(hexcolor[1:])
 		rgb = [red, green, blue]
-		canvas, pixel_table, countdown_table = CanvasTable(database_path), PixelTable(database_path), CountdownTable(database_path)
-		timestamp = datetime.datetime.utcnow()
+		canvas, pixel_table, countdown_table = CanvasTable(database_path), PixelTable(database_path), CountdownTable(database_path)			
+		timestamp = helper.helper_datetime_utcnow()
 		time_waited = countdown_table.seconds_waited(username)
-
 		if time_waited >= 300:
 			canvas.update_canvas_pixel(row, col, rgb)
 			pixel_table.upsert_pixel_data(row, col, username, rgb, timestamp)

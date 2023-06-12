@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import io
 import datetime
+import helper
 
 class Database():
 
@@ -172,7 +173,7 @@ class CountdownTable(Database):
         if timestamp_tuple is None:
             return math.inf
         last_timestamp = datetime.datetime.strptime(timestamp_tuple[0], '%Y-%m-%d %H:%M:%S.%f')
-        now = datetime.datetime.utcnow()
+        now = helper.helper_datetime_utcnow()
         return (now - last_timestamp).total_seconds()
 
     def delete_countdown_table(self):
