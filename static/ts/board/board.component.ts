@@ -1,7 +1,9 @@
 import { AfterViewInit, Component, ElementRef, Input, OnDestroy, ViewChild } from "@angular/core";
 import { Animator } from "@mangoplace/board/animator/animator";
-import { BoardImage } from "@mangoplace/board/boardimage";
+import { BoardImage, Pixel } from "@mangoplace/board/boardimage";
 import { BoardMode } from "@mangoplace/board/boardmode";
+import { BoardRateLimiter } from "@mangoplace/board/ratelimiter/boardratelimiter";
+import { BoardToast, BoardToastManager } from "@mangoplace/board/toastmanager/boardtoastmanager";
 
 enum AnimationType {
 	FORCEFUL_RERENDER,
@@ -99,6 +101,11 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 			this.canvasSize
 		);
 	});
+
+	public constructor(
+		private readonly boardRateLimiter: BoardRateLimiter,
+		private readonly boardToastManager: BoardToastManager
+	) {}
 
 	public get cellSize(): number {
 		return this.canvasSize / this.boardSize;
@@ -236,27 +243,64 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	}
 
 	private async queuePixelPlacement(): Promise<void> {
-		await this.animator.queueAnimation(
-			() => ({
-				type: AnimationType.PLACE,
-				left: 0,
-				right: 0,
-				duration: 0,
-				executor: state => {
-					this.withCoordinates((_, row, column) => {
-						const color = this.selectedColor;
+		let previousPixel: Pixel | undefined;
 
-						state.image.setPixel({
-							row,
-							column,
-							color
-						});
+		const placed = await this.boardRateLimiter.withPixelPlacement(
+			async () => {
+				let pixelResolve!: (pixel: Pixel) => void;
 
-						this.placePixelRemotely(row, column, color);
-					})(state.transformation);
-				}
-			})
+				const pixel = new Promise<Pixel>(resolve => pixelResolve = resolve);
+
+				await this.animator.queueAnimation(
+					() => ({
+						type: AnimationType.PLACE,
+						left: 0,
+						right: 0,
+						duration: 0,
+						executor: state => {
+							this.withCoordinates((_, row, column) => {
+								pixelResolve({
+									row,
+									column,
+									color: this.selectedColor
+								});
+
+								previousPixel = {
+									row,
+									column,
+									color: state.image.getPixelColor(row, column)
+								};
+
+								state.image.setPixel({
+									row,
+									column,
+									color: this.selectedColor
+								});
+							})(state.transformation);
+						}
+					})
+				);
+
+				return await pixel;
+			},
+			() => this.animator.queueAnimation(
+				() => ({
+					type: AnimationType.PLACE,
+					left: 0,
+					right: 0,
+					duration: 0,
+					executor: state => {
+						if (previousPixel) {
+							state.image.setPixel(previousPixel);
+						}
+					}
+				})
+			)
 		);
+
+		if (!placed) {
+			this.boardToastManager.showToast.emit(BoardToast.RateLimitMet);
+		}
 	}
 
 	private resizeCanvas(): void {
@@ -280,22 +324,13 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	}
 
 	private setCursor(): void {
-		this.frontCanvas.nativeElement.style.cursor = this.selectedMode == BoardMode.PAN ? "move" : "";
+		this.frontCanvas.nativeElement.style.cursor =
+			this.selectedMode == BoardMode.PAN ? "move" : "";
 	}
 
-	private translate(
-		transformation: Transformation,
-		deltaX: number,
-		deltaY: number
-	): void {
+	private translate(transformation: Transformation, deltaX: number, deltaY: number): void {
 		transformation.x += deltaX;
 		transformation.y += deltaY;
-	}
-
-	private placePixelRemotely(row: number, column: number, color: string): void {
-		fetch(`/canvas/${row}/${column}?hexcolor=${encodeURIComponent(color)}`, {
-			method: "PUT"
-		});
 	}
 
 	private zoomAbsolutely(

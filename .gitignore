@@ -1,7 +1,8 @@
 __pycache__/
+.pytest_cache/
 /node_modules/
 /static/css/
 /static/js/
 /config.py
 /yarn-error.log
-schema.db   
+schema.db

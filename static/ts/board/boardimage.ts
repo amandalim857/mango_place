@@ -40,8 +40,18 @@ export class BoardImage {
 		return await createImageBitmap(new ImageData(this.image, this.size));
 	}
 
+	public getPixelColor(row: number, column: number): string {
+		const i = (row * this.size + column) * 4;
+
+		const redComponent = this.image[i].toString(16).padStart(2, "0");
+		const greenComponent = this.image[i + 1].toString(16).padStart(2, "0");
+		const blueComponent = this.image[i + 2].toString(16).padStart(2, "0");
+
+		return `#${redComponent}${greenComponent}${blueComponent}`;
+	}
+
 	public setPixel(pixel: Pixel): void {
-		let i = (pixel.row * this.size + pixel.column) * 4;
+		const i = (pixel.row * this.size + pixel.column) * 4;
 
 		for (let j = 0; j < 3; j++) {
 			this.image[i + j] = parseInt(pixel.color.slice(j * 2 + 1, j * 2 + 3), 16);
