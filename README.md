@@ -1,6 +1,6 @@
 # MangoPlace - A Collaborative Canvas
 ## What is the project about?
-Mangoplace is a fun collaborative space designed for a group of friends to create a montage. Each user places a pixel before waiting for a cooldown period of 5 minutes, and can either unite together to create a cohesive drawing or work to cover up an opposing team's art with your own. The frontend was made using Angular, whilst the backend consists of flask, SQLite3 and pytest.
+Mangoplace is a fun collaborative space designed for a group of friends to create a montage. Each user places a pixel before waiting for a cooldown period of 5 minutes, and can either unite together to create a cohesive drawing or work to cover up an opposing team's art with your own. The frontend was made using Angular, whilst the backend consists of Flask, SQLite3 and pytest.
 
 ## Features
 Currently, the game supports users changing a pixel colour after their cooldown period is completed, and allows a spectator mode for watching other players compete. Users can magnify and drag the canvas around for a better view.

@@ -65,7 +65,7 @@ def create_app(database_path="schema.db"):
 			username = session["username"]
 		except KeyError:
 			response = make_response("You need to be logged in to add a pixel", 401)
-			response.headers['WWW-Authenticate'] = 'Basic realm="Login required"'
+			# response.headers['WWW-Authenticate'] = 'Basic realm="Login required"'
 			return response
 		red, green, blue = bytes.fromhex(hexcolor[1:])
 		rgb = [red, green, blue]

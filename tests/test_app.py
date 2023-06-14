@@ -56,6 +56,7 @@ def test_logout(client):
     rv = client.put('/canvas/7/7', query_string={'hexcolor':'#3399FF'})
     assert rv.status_code == 401
 
+# Test Canvas
 def test_get_canvas(client):
     rv = client.get('/canvas')
     assert rv.status_code == 200
@@ -73,7 +74,6 @@ def test_place_pixel(client):
 
     rv = client.put('/canvas/4/3', query_string={'hexcolor':'#daa520'})
     assert rv.status_code == 429
-
 
 def test_place_pixel_time_limit(client, mocker):
     client.post('/signup', data={'username':'jades', 'password':'password'})
