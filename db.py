@@ -7,21 +7,23 @@ import io
 import datetime
 import helper
 
+
 class Database():
 
     def __init__(self, database_path="schema.db"):
         self.conn = sqlite3.connect(database_path)
         self.cur = self.conn.cursor()
 
+
 class UserTable(Database):
 
     def create_users_table(self):
         self.cur.execute("""
         CREATE TABLE IF NOT EXISTS users(
-            username TEXT UNIQUE NOT NULL PRIMARY KEY,
+            id INTEGER PRIMARY KEY autoincrement,
+            username TEXT UNIQUE NOT NULL,
             password TEXT NOT NULL
         );""")
-        self.conn.commit()
 
     def add_user(self, username, password):
         userbytes = password.encode("utf-8")
@@ -54,8 +56,7 @@ class CanvasTable(Database):
 
     def canvas_exists(self):
         self.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='canvas';")
-        canvas_exists = self.cur.fetchone()
-        return 1 if canvas_exists else 0
+        return self.cur.fetchone()
 
     def create_canvas_table(self):
         self.cur.execute("""
@@ -79,8 +80,7 @@ class CanvasTable(Database):
         self.cur.execute("SELECT column_list FROM canvas ORDER BY row_id;")
         rows = self.cur.fetchall()
         for row in rows:
-            column = row[0]
-            grid.extend(column)
+            grid.extend(row[0])
 
         nparray = np.frombuffer(grid, dtype=np.uint8).reshape((128, 128, 3))
         img = Image.fromarray(nparray)
@@ -103,6 +103,7 @@ class CanvasTable(Database):
     def delete_canvas_table(self):
         self.cur.execute("DROP TABLE IF EXISTS canvas;")
 
+
 class PixelTable(Database):
 
     def create_pixel_table(self):
@@ -116,7 +117,6 @@ class PixelTable(Database):
             PRIMARY KEY(row_id, col_id),
             FOREIGN KEY(username) REFERENCES users(username)
         );""")
-        self.conn.commit()
 
     def upsert_pixel_data(self, row_id, col_id, username, color, timestamp):
         # color is a list of 3 values, timestamp is datetime object
@@ -131,21 +131,17 @@ class PixelTable(Database):
         ;""", (row_id, col_id, username, blob_data, timestamp))
         self.conn.commit()
 
-        self.conn.commit()
-
     def get_pixel_data(self, row_id, col_id):
         self.cur.execute("SELECT * FROM pixeltable WHERE row_id == ? AND col_id == ?", (row_id, col_id))
-        data = self.cur.fetchone()
-        return data
+        return self.cur.fetchone()
 
     def get_all_pixel_data(self):
         self.cur.execute("SELECT * FROM pixeltable")
-        data = self.cur.fetchall()
-        return data
+        return self.cur.fetchall()
 
     def delete_pixel_table(self):
         self.cur.execute("DROP TABLE IF EXISTS pixeltable;")
-        self.conn.commit()
+
 
 class CountdownTable(Database):
 
@@ -156,7 +152,6 @@ class CountdownTable(Database):
             timestamp TEXT NOT NULL,
             FOREIGN KEY(username) REFERENCES users(username)
         );""")
-        self.conn.commit()
 
     def upsert_user_timestamp(self, username, timestamp):
         self.cur.execute("""
@@ -178,4 +173,3 @@ class CountdownTable(Database):
 
     def delete_countdown_table(self):
         self.cur.execute("DROP TABLE IF EXISTS countdowntable;")
-        self.conn.commit()
