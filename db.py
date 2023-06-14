@@ -5,6 +5,7 @@ from PIL import Image
 import numpy as np
 import io
 import datetime
+import helper
 
 
 class Database():
@@ -46,6 +47,7 @@ class UserTable(Database):
         info = self.cur.fetchone()
         if info is None:
             return False
+
         result = bcrypt.checkpw(userbytes, info[0])
         return result
 
@@ -66,7 +68,7 @@ class CanvasTable(Database):
             col_list = bytes([255]*384)
             blob_data = sqlite3.Binary(col_list)
             self.cur.execute("""
-            INSERT INTO canvas(row_id, column_list) 
+            INSERT INTO canvas(row_id, column_list)
             VALUES(?, ?)
             ON CONFLICT(row_id)
             DO UPDATE SET column_list = ?
@@ -122,9 +124,9 @@ class PixelTable(Database):
         self.cur.execute("""
         INSERT INTO pixeltable(row_id, col_id, username, color, timestamp)
         VALUES(?, ?, ?, ?, ?)
-        ON CONFLICT(row_id, col_id) DO UPDATE 
-        SET username = EXCLUDED.username, 
-            color = EXCLUDED.color, 
+        ON CONFLICT(row_id, col_id) DO UPDATE
+        SET username = EXCLUDED.username,
+            color = EXCLUDED.color,
             timestamp = EXCLUDED.timestamp
         ;""", (row_id, col_id, username, blob_data, timestamp))
         self.conn.commit()
@@ -166,7 +168,7 @@ class CountdownTable(Database):
         if timestamp_tuple is None:
             return math.inf
         last_timestamp = datetime.datetime.strptime(timestamp_tuple[0], '%Y-%m-%d %H:%M:%S.%f')
-        now = datetime.datetime.utcnow()
+        now = helper.helper_datetime_utcnow()
         return (now - last_timestamp).total_seconds()
 
     def delete_countdown_table(self):

@@ -37,32 +37,43 @@
 		[show]="shownModal == modal"
 		[title]="title"
 		(close)="shownModal = AppModal.None">
-		<form [action]="modal == AppModal.LogIn ? '/log-in' : '/sign-up'" method="post">
+		<form [action]="modal == AppModal.LogIn ? '/login' : '/signup'" method="post">
 			<modal-body>
 				<div class="form-floating mb-2">
-					<input type="email"
-						id="email-input"
-						class="form-control"
-						placeholder="Email address">
+					<input type="text"
+						id="username-input"
+						[class]="'form-control' + (error == AppModalError.AccountExists || error == AppModalError.NonexistentUsername ? ' is-invalid' : '')"
+						name="username"
+						placeholder="Username">
 
-					<label for="email-input" required>Email address</label>
+					<label for="username-input" required>Username</label>
+					<div
+						class="invalid-feedback"
+						*ngIf="error == AppModalError.AccountExists">
+						That username is already taken.
+					</div>
+
+					<div
+						class="invalid-feedback"
+						*ngIf="error == AppModalError.NonexistentUsername">
+						That username doesn't exist.
+					</div>
 				</div>
 
 				<div class="form-floating mb-2">
 					<input type="password"
 						id="password-input"
-						class="form-control"
+						[class]="'form-control' + (error == AppModalError.IncorrectPassword ? ' is-invalid' : '')"
+						name="password"
 						placeholder="Password"
-						*ngIf="modal == AppModal.SignUp"
 						#password_input>
 
-					<input type="password"
-						id="password-input"
-						class="form-control"
-						placeholder="Password"
-						*ngIf="modal == AppModal.LogIn">
-
 					<label for="password-input" required>Password</label>
+					<div
+						class="invalid-feedback"
+						*ngIf="error == AppModalError.IncorrectPassword">
+						Incorrect password.
+					</div>
 				</div>
 
 				<div class="form-floating" *ngIf="modal == AppModal.SignUp">
