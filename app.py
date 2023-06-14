@@ -17,8 +17,8 @@ def index():
 def signup():
 	users = UserTable()
 	if request.method == 'POST':
-		username = request.form["username"]
-		password = request.form["password"]
+		username = request.form.get("username")
+		password = request.form.get("password")
 		if users.valid_username(username):
 			return redirect(url_for("index"), error="account_exists")
 		users.add_user(username, password)
