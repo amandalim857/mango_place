@@ -17,8 +17,8 @@ def index():
 def signup():
 	users = UserTable()
 	if request.method == 'POST':
-		username = request.form["username"]
-		password = request.form["password"]
+		username = request.form.get("username")
+		password = request.form.get("password")
 		if users.valid_username(username):
 			return redirect(url_for("index"), error="account_exists")
 		users.add_user(username, password)
@@ -47,10 +47,11 @@ def logout():
 	session.pop('username', None)
 	return redirect(url_for("login"))
 
+
 # Canvas
-@app.route("/canvas", methods=['GET'])
+@app.route("/canvas")
 def get_canvas():
-	canvas = CanvasTable()
+	canvas = CanvasTable(database_path)
 	if not canvas.canvas_exists():
 		canvas.create_canvas_table()
 	img_file = canvas.get_canvas_table()
@@ -61,12 +62,22 @@ def get_canvas():
 @app.route("/canvas/<int:row>/<int:col>", methods=['PUT'])
 def place_pixel(row, col):
 	hexcolor = request.args.get('hexcolor')
-	username = session["username"]
-	red, green, blue = bytes.fromhex(hexcolor)
+	try:
+		username = session["username"]
+	except KeyError:
+		response = make_response("You need to be logged in to add a pixel", 401)
+		response.headers['WWW-Authenticate'] = 'Basic realm="Login required"'
+		return response
+	red, green, blue = bytes.fromhex(hexcolor[1:])
 	rgb = [red, green, blue]
-	canvas, pixel_table, countdown_table = CanvasTable(), PixelTable(), CountdownTable()
-	timestamp = datetime.datetime.utcnow()
+	canvas, pixel_table, countdown_table = CanvasTable(database_path), PixelTable(database_path), CountdownTable(database_path)			
+	timestamp = helper.helper_datetime_utcnow()
 	time_waited = countdown_table.seconds_waited(username)
+	if time_waited >= 300:
+		canvas.update_canvas_pixel(row, col, rgb)
+		pixel_table.upsert_pixel_data(row, col, username, rgb, timestamp)
+		countdown_table.upsert_user_timestamp(username, timestamp)
+		return Response()
 
 	if time_waited >= 300:
 		canvas.update_canvas(row, col, rgb)

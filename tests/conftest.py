@@ -11,7 +11,6 @@ def tmp_database_path():
 def user_table(tmp_database_path):
     result = UserTable(database_path=tmp_database_path)
     result.create_users_table()
-
     yield result
 
 @pytest.fixture(scope="session")
@@ -23,9 +22,12 @@ def canvas(tmp_database_path):
 @pytest.fixture(scope="session")
 def pixel_table(tmp_database_path):
     pixel_table = PixelTable(database_path=tmp_database_path)
+    pixel_table.create_pixel_table()
     yield pixel_table
 
 @pytest.fixture(scope="session")
 def countdown_table(tmp_database_path):
     countdown_table = CountdownTable(database_path=tmp_database_path)
+    countdown_table.create_countdown_table()
     yield countdown_table
+    
