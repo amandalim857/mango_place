@@ -22,13 +22,13 @@ class TestUsers:
     def test_delete_user(self, user_table, username, password):
         user_table.add_user(username, password)
         user_table.delete_user(username)
+        assert not user_table.valid_username(username)        
 
     def test_valid_username(self, user_table, username, password):
         user_table.add_user(username, password)
 
         assert user_table.valid_username(username)
         assert not user_table.valid_username("hello")
-        assert user_table.valid_username(username)
 
     def test_valid_login(self, user_table, username, password):
         user_table.add_user(username, password)
@@ -44,7 +44,7 @@ class TestUsers:
         assert not user_table.valid_login(username, "sprongle")
 
 
-class TestCanvas():
+class TestCanvas:
     def test_canvas_exists(self, canvas):
         canvas.delete_canvas_table()
         assert not canvas.canvas_exists()
@@ -85,7 +85,7 @@ class TestCanvas():
         assert not canvas.canvas_exists()
 
 
-class TestPixelTable():
+class TestPixelTable:
     def test_create_pixel_table(self, pixel_table):
         pixel_table.create_pixel_table()
         pixel_table.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='pixeltable';")
@@ -152,7 +152,7 @@ class TestPixelTable():
         assert pixel_table.cur.fetchone() is None
     
 
-class TestCountdownTable():
+class TestCountdownTable:
     def test_create_countdown_table(self, countdown_table):
         countdown_table.create_countdown_table()
         countdown_table.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='countdowntable';")
@@ -198,3 +198,4 @@ class TestCountdownTable():
         countdown_table.delete_countdown_table()
         countdown_table.cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='countdowntable';")
         assert countdown_table.cur.fetchone() is None
+        

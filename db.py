@@ -47,8 +47,11 @@ class UserTable(Database):
         info = self.cur.fetchone()
         if info is None:
             return False
-
-        result = bcrypt.checkpw(userbytes, info[0])
+        if type(info[0]) == str:
+            data = info[0].encode()
+        else:
+            data = info[0]
+        result = bcrypt.checkpw(userbytes, data)
         return result
 
 
