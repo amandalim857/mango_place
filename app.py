@@ -45,7 +45,7 @@ def create_app(database_path='schema.db'):
 		username = request.form.get('username')
 		password = request.form.get('password')
 		if username is None or password is None:
-			return make_response('username or password not inputted', 400)
+			return make_response('username or password was not input', 400)
 		if users.valid_username(username):
 			if users.valid_login(username, password):
 				session['username'] = username
