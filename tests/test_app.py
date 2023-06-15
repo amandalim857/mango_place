@@ -28,6 +28,9 @@ def test_signup(client):
     assert urlparse(rv.location).path == '/'
     assert urlparse(rv.location).query == 'error=account_exists'
 
+    rv = client.post('/signup', data={'username':'jimbob'})
+    assert rv.status_code == 400
+
 def test_login(client):
     client.post('/signup', data={'username':'hobo', 'password':'password'})
     rv = client.post('/login', data={'username':'hobo', 'password':'password'})
@@ -48,8 +51,13 @@ def test_login(client):
     assert urlparse(rv.location).path == '/'
     assert urlparse(rv.location).query == 'error=incorrect_password'
 
+    rv = client.post('/login', data={'password':'banana'})
+    assert rv.status_code == 400
+
 def test_logout(client):
     client.post('/signup', data={'username':'hobo', 'password':'password'})
+    rv = client.get('/logout')
+    assert rv.status_code == 401
     client.post('/login', data={'username':'hobo', 'password':'password'})
     rv = client.get('/logout')
     assert rv.status_code == 302
@@ -74,6 +82,25 @@ def test_place_pixel(client):
 
     rv = client.put('/canvas/4/3', query_string={'hexcolor':'#daa520'})
     assert rv.status_code == 429
+
+def test_place_pixel_bad_input(client):
+    client.post('/signup', data={'username':'jimbob', 'password':'password'})
+    client.post('/login', data={'username':'jimbob', 'password':'password'})
+
+    rv = client.put('/canvas/7/7')
+    assert rv.status_code == 400
+
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':''})
+    assert rv.status_code == 400
+
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':'3399FF'})
+    assert rv.status_code == 400
+
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':'#3399'})
+    assert rv.status_code == 400
+
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':'blah'})
+    assert rv.status_code == 400
 
 def test_place_pixel_time_limit(client, mocker):
     client.post('/signup', data={'username':'jades', 'password':'password'})
