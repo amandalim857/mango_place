@@ -4,4 +4,4 @@ __pycache__/
 /static/js/
 /config.py
 /yarn-error.log
-schema.db
+schema.db   
