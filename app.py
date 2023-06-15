@@ -11,7 +11,7 @@ def create_app(database_path='schema.db'):
 	def logged_in(f):
 		@wraps(f)
 		def decorated_function(*args, **kwargs):
-			if session.get('username') is not None:
+			if 'username' in session:
 				return f(*args, **kwargs)
 			else:
 				return make_response('you must be logged in to carry out this function', 401)
@@ -78,9 +78,15 @@ def create_app(database_path='schema.db'):
 	def place_pixel(row, col):
 		hexcolor = request.args.get('hexcolor')
 		username = session.get('username')
-		if hexcolor[0] != "#":
-			return make_response('rgb code require # in front', 400)
-		colors = bytes.fromhex(hexcolor[1:])
+		print(hexcolor)
+		if hexcolor is None or hexcolor == '':
+			return make_response('Need to include hexcolor argument', 400)
+		if hexcolor[0] != '#':
+			return make_response('the first character must be "#"', 400)
+		try:
+			colors = bytes.fromhex(hexcolor[1:])
+		except ValueError:
+			return make_response(ValueError, 400)
 		if len(colors) != 3:
 			return make_response('the hex must contain exactly 3 colors', 400)
 		rgb = [color for color in colors]
