@@ -83,10 +83,23 @@ def test_place_pixel(client):
     rv = client.put('/canvas/4/3', query_string={'hexcolor':'#daa520'})
     assert rv.status_code == 429
 
+def test_place_pixel_bad_input(client):
+    client.post('/signup', data={'username':'jimbob', 'password':'password'})
+    client.post('/login', data={'username':'jimbob', 'password':'password'})
+
+    rv = client.put('/canvas/7/7')
+    assert rv.status_code == 400
+
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':''})
+    assert rv.status_code == 400
+
     rv = client.put('/canvas/7/7', query_string={'hexcolor':'3399FF'})
     assert rv.status_code == 400
 
     rv = client.put('/canvas/7/7', query_string={'hexcolor':'#3399'})
+    assert rv.status_code == 400
+
+    rv = client.put('/canvas/7/7', query_string={'hexcolor':'blah'})
     assert rv.status_code == 400
 
 def test_place_pixel_time_limit(client, mocker):
