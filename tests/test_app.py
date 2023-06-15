@@ -50,6 +50,8 @@ def test_login(client):
 
 def test_logout(client):
     client.post('/signup', data={'username':'hobo', 'password':'password'})
+    rv = client.get('/logout')
+    assert rv.status_code == 401
     client.post('/login', data={'username':'hobo', 'password':'password'})
     rv = client.get('/logout')
     assert rv.status_code == 302
