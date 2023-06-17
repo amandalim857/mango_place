@@ -134,6 +134,8 @@ class PixelTable(Database):
         ;""", (row_id, col_id, username, blob_data, timestamp))
         self.conn.commit()
 
+        self.conn.commit()
+
     def get_pixel_data(self, row_id, col_id):
         self.cur.execute("SELECT * FROM pixeltable WHERE row_id == ? AND col_id == ?", (row_id, col_id))
         return self.cur.fetchone()
