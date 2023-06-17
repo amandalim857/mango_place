@@ -1,6 +1,7 @@
 __pycache__/
 .pytest_cache/
 /node_modules/
+/poetry.lock
 /static/css/
 /static/js/
 /config.py
