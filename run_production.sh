@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-gunicorn app:app
+gunicorn 'app:create_app()'
