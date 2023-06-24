@@ -9,7 +9,7 @@
 
 <modal
 	[show]="shownModal == AppModal.Landing"
-	title="Log in or sign up to contribute"
+	title="Sign up or log in to contribute"
 	(close)="shownModal = AppModal.None">
 	<modal-body>
 		To modify a Mango Place board, please create an account.<br>
@@ -95,3 +95,15 @@
 		</form>
 	</modal>
 </ng-template>
+
+<div
+	class="unauthenticated-buttons d-flex position-absolute"
+	*ngIf="!authDetector.isAuthenticated() && shownModal == AppModal.None">
+	<button type="button"
+		class="btn btn-outline-primary fs-5 me-2 shadow"
+		(click)="shownModal = AppModal.LogIn">Log in</button>
+
+	<button type="button"
+		class="btn btn-primary fs-5 shadow"
+		(click)="shownModal = AppModal.SignUp">Sign up</button>
+</div>

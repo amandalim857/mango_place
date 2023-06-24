@@ -32,7 +32,7 @@ export class AppComponent {
 	@ViewChildren("passwordConfirmInput")
 	private readonly passwordConfirmElements!: QueryList<ElementRef<HTMLInputElement>>;
 
-	constructor(authDetector: AuthDetector) {
+	constructor(public readonly authDetector: AuthDetector) {
 		if (authDetector.isAuthenticated()) {
 			this.shownModal = AppModal.None;
 
