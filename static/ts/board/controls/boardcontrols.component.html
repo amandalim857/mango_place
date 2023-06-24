@@ -12,9 +12,10 @@
 		class="board-control-button mb-1"
 		category="mode"
 		[checked]="defaultMode == BoardMode.PLACE"
+		[disabled]="!canEdit()"
 		icon="edit"
 		inputId="board-mode-input-2"
-		title="Place a pixel"
+		[title]="canEdit() ? 'Place a pixel' : 'Sign up or log in to contribute'"
 		(action)="changeMode.emit(BoardMode.PLACE)"></board-control-button>
 
 	<board-control-button
