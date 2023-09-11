@@ -4,6 +4,7 @@ import { BoardImage, Pixel } from "@mangoplace/board/boardimage";
 import { BoardMode } from "@mangoplace/board/boardmode";
 import { BoardRateLimiter } from "@mangoplace/board/ratelimiter/boardratelimiter";
 import { BoardToast, BoardToastManager } from "@mangoplace/board/toastmanager/boardtoastmanager";
+import { AuthDetector } from "@mangoplace/util/authdetector";
 
 enum AnimationType {
 	FORCEFUL_RERENDER,
@@ -103,6 +104,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	});
 
 	public constructor(
+		private readonly authDetector: AuthDetector,
 		private readonly boardRateLimiter: BoardRateLimiter,
 		private readonly boardToastManager: BoardToastManager
 	) {}
@@ -114,7 +116,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 	public async handleMouseDown(): Promise<void> {
 		this.isMouseDown = true;
 
-		if (this.selectedMode == BoardMode.PLACE) {
+		if (this.selectedMode == BoardMode.PLACE && this.authDetector.isAuthenticated()) {
 			await this.queuePixelPlacement();
 		}
 	}
@@ -137,7 +139,7 @@ export class BoardComponent implements AfterViewInit, OnDestroy {
 					)
 				})
 			);
-		} else if (this.selectedMode == BoardMode.PLACE) {
+		} else if (this.selectedMode == BoardMode.PLACE && this.authDetector.isAuthenticated()) {
 			if (this.isMouseDown) {
 				await this.queuePixelPlacement();
 			} else {

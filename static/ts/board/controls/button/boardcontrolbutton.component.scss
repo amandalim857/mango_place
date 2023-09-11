@@ -5,3 +5,8 @@
 :checked + .board-control-button-colored {
 	background-image: linear-gradient(0, rgba(0, 0, 0, 0.625), rgba(0, 0, 0, 0.625))
 }
+
+:disabled + .board-control-label {
+	// Enable the tooltip even when the button is disabled
+	pointer-events: auto !important;
+}

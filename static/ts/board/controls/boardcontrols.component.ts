@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output, ViewEncapsulation } from "@angular/core";
 import { BoardMode } from "@mangoplace/board/boardmode";
+import { AuthDetector } from "@mangoplace/util/authdetector";
 
 @Component({
 	encapsulation: ViewEncapsulation.None,
@@ -54,6 +55,12 @@ export class BoardControlsComponent implements OnInit {
 	];
 
 	public colorPickerColor!: string;
+
+	constructor(private readonly authDetector: AuthDetector) {}
+
+	public canEdit(): boolean {
+		return this.authDetector.isAuthenticated();
+	}
 
 	public ngOnInit(): void {
 		const defaultColorIsPreset =

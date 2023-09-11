@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild } from "@angular/core";
+import { Component, ElementRef, QueryList, ViewChildren } from "@angular/core";
 import { AuthDetector } from "@mangoplace/util/authdetector";
 
 enum AppModal {
@@ -26,13 +26,13 @@ export class AppComponent {
 	public error?: AppModalError;
 	public shownModal: AppModal = AppModal.Landing;
 
-	@ViewChild("password_input")
-	private readonly passwordElement!: ElementRef<HTMLInputElement>;
+	@ViewChildren("passwordInput")
+	private readonly passwordElements!: QueryList<ElementRef<HTMLInputElement>>;
 
-	@ViewChild("password_confirm_input")
-	private readonly passwordConfirmElement!: ElementRef<HTMLInputElement>;
+	@ViewChildren("passwordConfirmInput")
+	private readonly passwordConfirmElements!: QueryList<ElementRef<HTMLInputElement>>;
 
-	constructor(authDetector: AuthDetector) {
+	constructor(public readonly authDetector: AuthDetector) {
 		if (authDetector.isAuthenticated()) {
 			this.shownModal = AppModal.None;
 
@@ -60,13 +60,17 @@ export class AppComponent {
 	}
 
 	public validatePasswordConfirmation(): void {
-		if (
-			this.passwordElement.nativeElement.value ==
-			this.passwordConfirmElement.nativeElement.value
-		) {
-			this.passwordConfirmElement.nativeElement.setCustomValidity("");
-		} else {
-			this.passwordConfirmElement.nativeElement.setCustomValidity("Passwords don't match.");
-		}
+		this.passwordElements.forEach((passwordElement, i) => {
+			const passwordConfirmElement = this.passwordElements.get(i)!;
+
+			if (
+				passwordElement.nativeElement.value ==
+				passwordConfirmElement.nativeElement.value
+			) {
+				passwordConfirmElement.nativeElement.setCustomValidity("");
+			} else {
+				passwordConfirmElement.nativeElement.setCustomValidity("Passwords don't match.");
+			}
+		});
 	}
 }
